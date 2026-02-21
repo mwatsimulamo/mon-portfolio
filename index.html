@@ -27,6 +27,7 @@
             <ul class="nav-menu" id="navMenu">
                 <li><a href="#accueil" class="nav-link" data-i18n="nav.home">Accueil</a></li>
                 <li><a href="#apropos" class="nav-link" data-i18n="nav.about">À propos</a></li>
+                <li><a href="#experiences" class="nav-link" data-i18n="nav.experiences">Expériences</a></li>
                 <li><a href="#competences" class="nav-link" data-i18n="nav.skills">Compétences</a></li>
                 <li><a href="#projets" class="nav-link" data-i18n="nav.projects">Projets</a></li>
                 <li><a href="#articles" class="nav-link" data-i18n="nav.articles">Articles</a></li>
@@ -56,10 +57,9 @@
         <div class="container">
             <div class="hero-content">
                 <h1 class="hero-title">Olivier Mwatsimulamo</h1>
-                <p class="hero-subtitle" data-i18n="hero.subtitle">Développeur Full Stack | Spécialiste Blockchain & Cardano</p>
+                <p class="hero-subtitle" data-i18n="hero.subtitle">UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Formateur Web3 & Contributeur Communautaire | Rédacteur Technique | Créateur de Contenus Web3 | Reviseur – Project Catalyst Cardano</p>
                 <p class="hero-bio" data-i18n="hero.bio">
-                    Passionné par le développement web et la blockchain, je crée des solutions innovantes 
-                    en combinant technologies modernes et expertise en smart contracts Cardano.
+                    Spécialisé dans l'écosystème Cardano, la formation et la création de contenus Web3.
                 </p>
                 <a href="#cv" class="btn btn-primary" data-i18n="hero.downloadCv">
                     <i class="fas fa-download"></i> Télécharger le CV
@@ -85,20 +85,30 @@
                 </div>
                 <div class="about-text">
                     <p data-i18n="about.text1">
-                        Développeur full stack avec une passion pour les technologies émergentes, 
-                        je me spécialise dans la création d'applications web modernes et de solutions blockchain.
+                        Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano. Mon travail combine les technologies web modernes avec l'innovation blockchain pour créer des expériences numériques intuitives et centrées utilisateur.
                     </p>
                     <p data-i18n="about.text2">
-                        Mon parcours m'a conduit à explorer en profondeur l'écosystème Cardano, 
-                        où j'ai développé des smart contracts, des DApps et créé du contenu éducatif 
-                        pour la communauté.
+                        Au-delà du développement, je contribue activement à la croissance de l'écosystème Cardano et Web3 en RD Congo grâce à la formation, à l'engagement communautaire et à la rédaction technique. J'accompagne l'onboarding des nouveaux membres, crée des contenus éducatifs et aide à faire le lien entre Web2 et Web3.
                     </p>
                     <p data-i18n="about.text3">
-                        Je crois en l'apprentissage continu et en la contribution à l'open source. 
-                        Mon objectif est de créer des solutions qui ont un impact positif et qui 
-                        tirent parti des dernières innovations technologiques.
+                        Passionné par la blockchain et l'apprentissage continu, je vise à développer des solutions impactantes tout en renforçant les communautés par la technologie et le partage de connaissances.
                     </p>
                 </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Expériences -->
+    <section id="experiences" class="section">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h2 class="section-title" data-i18n="experiences.title" style="margin-bottom: 0;">Expériences</h2>
+                <button class="btn btn-secondary admin-only" id="adminExperienceBtn" style="display: none;">
+                    <i class="fas fa-cog"></i> Administration
+                </button>
+            </div>
+            <div class="experiences-list" id="experiencesList">
+                <div class="loading" data-i18n="experiences.loading">Chargement des expériences...</div>
             </div>
         </div>
     </section>
@@ -157,7 +167,12 @@
     <!-- Section Projets -->
     <section id="projets" class="section">
         <div class="container">
-            <h2 class="section-title" data-i18n="projects.title">Mes Projets</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h2 class="section-title" data-i18n="projects.title" style="margin-bottom: 0;">Mes Projets</h2>
+                <button class="btn btn-secondary admin-only" id="adminProjectBtn" style="display: none;">
+                    <i class="fas fa-cog"></i> Administration
+                </button>
+            </div>
             <div class="projects-grid" id="projectsGrid">
                 <!-- Les projets seront chargés dynamiquement depuis projects.json -->
                 <div class="loading" data-i18n="projects.loading">Chargement des projets...</div>
@@ -170,7 +185,7 @@
         <div class="container">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
                 <h2 class="section-title" data-i18n="articles.title" style="margin-bottom: 0;">Articles & Publications</h2>
-                <button class="btn btn-secondary" id="adminBtn">
+                <button class="btn btn-secondary admin-only" id="adminBtn" style="display: none;">
                     <i class="fas fa-cog"></i> Administration
                 </button>
             </div>
@@ -198,7 +213,13 @@
                     </div>
                     <div class="form-group">
                         <label for="articleDescription">Description *</label>
-                        <textarea id="articleDescription" name="description" rows="3" required></textarea>
+                        <div class="description-toolbar" data-target="articleDescription">
+                            <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
+                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                        </div>
+                        <textarea id="articleDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
                     </div>
                     <div class="form-group">
                         <label for="articleLink">Lien de l'article *</label>
@@ -209,7 +230,7 @@
                         <input type="date" id="articleDate" name="date">
                     </div>
                     <div class="admin-actions">
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" id="articleSubmitBtn">
                             <i class="fas fa-plus"></i> Ajouter l'article
                         </button>
                         <button type="button" class="btn btn-secondary" id="exportArticlesBtn">
@@ -228,69 +249,210 @@
         </div>
     </div>
 
+    <!-- Panneau d'Administration des Projets -->
+    <div id="adminProjectPanel" class="admin-panel" style="display: none;">
+        <div class="admin-content">
+            <div class="admin-header">
+                <h2><i class="fas fa-cog"></i> Administration des Projets</h2>
+                <button class="admin-close" id="closeAdminProjectBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-body">
+                <form id="addProjectForm">
+                    <div class="form-group">
+                        <label for="projectTitle">Titre du projet *</label>
+                        <input type="text" id="projectTitle" name="title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectDescription">Description *</label>
+                        <div class="description-toolbar" data-target="projectDescription">
+                            <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
+                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                        </div>
+                        <textarea id="projectDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectImage">URL de l'image (optionnel)</label>
+                        <input type="url" id="projectImage" name="image" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectTechnologies">Technologies (séparées par des virgules)</label>
+                        <input type="text" id="projectTechnologies" name="technologies" placeholder="React, Node.js, TypeScript...">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectGithub">Lien GitHub (optionnel)</label>
+                        <input type="url" id="projectGithub" name="github" placeholder="https://github.com/...">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectDemo">Lien démo (optionnel)</label>
+                        <input type="url" id="projectDemo" name="demo" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="projectCardano" name="cardano">
+                            Projet Cardano / Blockchain
+                        </label>
+                    </div>
+                    <div class="admin-actions">
+                        <button type="submit" class="btn btn-primary" id="projectSubmitBtn">
+                            <i class="fas fa-plus"></i> Ajouter le projet
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="exportProjectsBtn">
+                            <i class="fas fa-download"></i> Exporter projects.json
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearLocalProjectsBtn">
+                            <i class="fas fa-trash"></i> Effacer les projets locaux
+                        </button>
+                    </div>
+                </form>
+                <div class="admin-articles-list admin-projects-list" id="adminProjectsList">
+                    <h3>Projets ajoutés localement</h3>
+                    <div id="localProjectsList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panneau d'Administration des Expériences -->
+    <div id="adminExperiencePanel" class="admin-panel" style="display: none;">
+        <div class="admin-content">
+            <div class="admin-header">
+                <h2><i class="fas fa-cog"></i> Administration des Expériences</h2>
+                <button class="admin-close" id="closeAdminExperienceBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-body">
+                <form id="addExperienceForm">
+                    <div class="form-group">
+                        <label for="experienceTitle">Intitulé du poste / rôle *</label>
+                        <input type="text" id="experienceTitle" name="title" required placeholder="ex. Milestone Reviewer">
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceOrganization">Organisation / Projet (optionnel)</label>
+                        <input type="text" id="experienceOrganization" name="organization" placeholder="ex. Project Catalyst, Cardano">
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceDescription">Description *</label>
+                        <div class="description-toolbar" data-target="experienceDescription">
+                            <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
+                            <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
+                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                        </div>
+                        <textarea id="experienceDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="experiencePeriod">Période (optionnel)</label>
+                        <input type="text" id="experiencePeriod" name="period" placeholder="ex. 2024 - Présent">
+                    </div>
+                    <div class="form-group">
+                        <label for="experienceLink">Lien (optionnel)</label>
+                        <input type="url" id="experienceLink" name="link" placeholder="https://...">
+                    </div>
+                    <div class="admin-actions">
+                        <button type="submit" class="btn btn-primary" id="experienceSubmitBtn">
+                            <i class="fas fa-plus"></i> Ajouter l'expérience
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="exportExperiencesBtn">
+                            <i class="fas fa-download"></i> Exporter experiences.json
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearLocalExperiencesBtn">
+                            <i class="fas fa-trash"></i> Effacer les expériences locales
+                        </button>
+                    </div>
+                </form>
+                <div class="admin-articles-list" id="adminExperiencesList">
+                    <h3>Expériences ajoutées localement</h3>
+                    <div id="localExperiencesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Section CV -->
     <section id="cv" class="section">
         <div class="container">
             <h2 class="section-title" data-i18n="cv.title">Mon CV</h2>
             <div class="cv-content">
-                <div class="cv-preview">
-                    <iframe id="cvPreview" src="" frameborder="0"></iframe>
-                </div>
                 <div class="cv-actions">
+                    <button type="button" class="btn btn-secondary" id="toggleCvPreviewBtn">
+                        <i class="fas fa-eye"></i> <span data-i18n="cv.view">Voir le CV</span>
+                    </button>
                     <a href="#" class="btn btn-primary" download id="downloadCvBtn" data-i18n="cv.download">
                         <i class="fas fa-download"></i> Télécharger le CV (PDF)
                     </a>
+                </div>
+                <div class="cv-preview-container" id="cvPreviewContainer" style="display: none;">
+                    <div class="cv-preview">
+                        <embed id="cvPreview" type="application/pdf" width="100%" height="600" title="Aperçu du CV">
+                    </div>
+                    <p class="cv-fallback-link"><a href="#" id="cvOpenInNewTab" target="_blank" rel="noopener">Ouvrir le CV dans un nouvel onglet</a> si l’aperçu ne s’affiche pas.</p>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Section Contact -->
-    <section id="contact" class="section section-alt">
+    <section id="contact" class="section section-alt contact-section">
         <div class="container">
             <h2 class="section-title" data-i18n="contact.title">Contactez-moi</h2>
             <div class="contact-content">
                 <div class="contact-info">
-                    <h3 data-i18n="contact.social">Réseaux sociaux</h3>
+                    <h3 class="contact-info-title" data-i18n="contact.social">Réseaux sociaux</h3>
+                    <p class="contact-info-desc">Retrouvez-moi sur les plateformes ci-dessous.</p>
                     <div class="social-links">
-                        <a href="mailto:mwatsimulamoolivier@gmail.com" class="social-link" target="_blank" rel="noopener">
+                        <a href="mailto:mwatsimulamoolivier@gmail.com" class="social-link" target="_blank" rel="noopener" title="Email">
                             <i class="fas fa-envelope"></i>
                             <span>Email</span>
                         </a>
-                        <a href="http://www.linkedin.com/in/olivier-mwatsimulamo-389b51233" class="social-link" target="_blank" rel="noopener">
+                        <a href="https://wa.me/243974380853" class="social-link" target="_blank" rel="noopener" title="WhatsApp">
+                            <i class="fab fa-whatsapp"></i>
+                            <span>WhatsApp</span>
+                        </a>
+                        <a href="https://t.me/OlivierMWATSIMULAMO" class="social-link" target="_blank" rel="noopener" title="Telegram">
+                            <i class="fab fa-telegram"></i>
+                            <span>Telegram</span>
+                        </a>
+                        <a href="https://www.linkedin.com/in/olivier-mwatsimulamo-389b51233" class="social-link" target="_blank" rel="noopener" title="LinkedIn">
                             <i class="fab fa-linkedin"></i>
                             <span>LinkedIn</span>
                         </a>
-                        <a href="https://x.com/OlivierMWATSIM1" class="social-link" target="_blank" rel="noopener">
+                        <a href="https://x.com/OlivierMWATSIM1" class="social-link" target="_blank" rel="noopener" title="Twitter / X">
                             <i class="fab fa-twitter"></i>
-                            <span>Twitter/X</span>
+                            <span>X</span>
                         </a>
-                        <a href="https://github.com/mwatsimulamo" class="social-link" target="_blank" rel="noopener">
+                        <a href="https://github.com/mwatsimulamo" class="social-link" target="_blank" rel="noopener" title="GitHub">
                             <i class="fab fa-github"></i>
                             <span>GitHub</span>
                         </a>
                     </div>
                 </div>
                 <div class="contact-form-container">
-                    <h3 data-i18n="contact.form">Formulaire de contact</h3>
+                    <h3 class="contact-form-title" data-i18n="contact.form">Formulaire de contact</h3>
                     <form class="contact-form" id="contactForm">
-                        <div class="form-group">
-                            <label for="name" data-i18n="contact.name">Nom</label>
-                            <input type="text" id="name" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email" data-i18n="contact.email">Email</label>
-                            <input type="email" id="email" name="email" required>
+                        <div class="contact-form-row">
+                            <div class="form-group">
+                                <label for="name" data-i18n="contact.name">Nom</label>
+                                <input type="text" id="name" name="name" required placeholder="Votre nom">
+                            </div>
+                            <div class="form-group">
+                                <label for="email" data-i18n="contact.email">Email</label>
+                                <input type="email" id="email" name="email" required placeholder="votre@email.com">
+                            </div>
                         </div>
                         <div class="form-group">
                             <label for="subject" data-i18n="contact.subject">Sujet</label>
-                            <input type="text" id="subject" name="subject" required>
+                            <input type="text" id="subject" name="subject" required placeholder="Objet du message">
                         </div>
                         <div class="form-group">
                             <label for="message" data-i18n="contact.message">Message</label>
-                            <textarea id="message" name="message" rows="5" required></textarea>
+                            <textarea id="message" name="message" rows="4" required placeholder="Votre message..."></textarea>
                         </div>
-                        <button type="submit" class="btn btn-primary" data-i18n="contact.send">
+                        <button type="submit" class="btn btn-primary btn-contact-submit" data-i18n="contact.send">
                             <i class="fas fa-paper-plane"></i> Envoyer
                         </button>
                     </form>
@@ -299,11 +461,17 @@
         </div>
     </section>
 
+    <!-- Conteneur des toasts -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">
-            <p>&copy; 2024 Mon Portfolio. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
-            <p class="footer-note"><span data-i18n="footer.developed">Développé avec</span> <i class="fas fa-heart"></i> <span data-i18n="footer.and">et passion</span></p>
+            <p>&copy; 2026 mwatsomulamo-Portfolio. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
+            <p class="footer-admin">
+                <a href="#" class="admin-unlock-link" id="adminUnlockTrigger" title="Accès réservé"><i class="fas fa-lock"></i> Mode admin</a>
+                <a href="#" class="admin-logout-link" id="adminLogoutTrigger" style="display: none;" title="Quitter le mode administration"><i class="fas fa-sign-out-alt"></i> Quitter le mode admin</a>
+            </p>
         </div>
     </footer>
 

@@ -17,13 +17,233 @@
 let translations = {};
 let currentLang = localStorage.getItem('portfolio-lang') || 'fr';
 
+/** Mot de passe pour accéder au mode administration (articles / projets). Changez-le ! */
+const ADMIN_PASSWORD = '2054';
+const ADMIN_STORAGE_KEY = 'portfolio-admin';
+
+/** Email de réception des messages du formulaire de contact */
+const CONTACT_EMAIL = 'mwatsimulamoolivier@gmail.com';
+/** Formspree : collez uniquement l'ID du formulaire (ex: mjgearjz) ou l'URL complète. */
+const FORMSPREE_FORM_ID = 'mjgearjz';
+
+/** Nombre d'articles et d'expériences affichés avant "Voir plus". */
+const INITIAL_DISPLAY_COUNT = 3;
+
+// ============================================
+// TOAST NOTIFICATIONS
+// ============================================
+
+/**
+ * Affiche un toast (notification éphémère)
+ * @param {string} message - Message à afficher
+ * @param {string} type - 'success' | 'info'
+ * @param {number} duration - Durée en ms avant disparition (défaut: 4000)
+ */
+function showToast(message, type = 'success', duration = 4000) {
+    const container = document.getElementById('toastContainer');
+    if (!container) return;
+    const toast = document.createElement('div');
+    toast.className = `toast toast--${type}`;
+    const icon = type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
+    toast.innerHTML = `
+        <i class="fas ${icon} toast-icon" aria-hidden="true"></i>
+        <span class="toast-message">${message}</span>
+    `;
+    container.appendChild(toast);
+    const removeToast = () => {
+        toast.classList.add('toast--out');
+        setTimeout(() => toast.remove(), 300);
+    };
+    const timer = setTimeout(removeToast, duration);
+    toast.addEventListener('click', () => {
+        clearTimeout(timer);
+        removeToast();
+    });
+}
+
+/**
+ * Formate le formatage inline : **gras**, *italique*, __souligné__
+ * À appliquer sur du texte déjà échappé HTML.
+ */
+function applyInlineFormatting(escapedText) {
+    return escapedText
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/__([^_]+)__/g, '<u>$1</u>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
+}
+
+/**
+ * Formate un texte description en HTML avec paragraphes, listes et formatage (gras, italique, souligné).
+ * Syntaxe : **gras** *italique* __souligné__ ; lignes commençant par "- " ou "* " = liste à puces.
+ * Échappe le HTML pour la sécurité.
+ */
+function formatDescriptionAsParagraphs(description) {
+    if (!description || typeof description !== 'string') return '';
+    const escape = (s) => String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    const blocks = description.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
+    if (blocks.length === 0) {
+        const t = description.trim();
+        if (!t) return '';
+        const escaped = escape(t).replace(/\n/g, '<br>');
+        return `<p class="description-para">${applyInlineFormatting(escaped)}</p>`;
+    }
+    const out = [];
+    for (const block of blocks) {
+        const lines = block.split(/\n/).map(l => l.trimEnd());
+        const isList = lines.every(l => l === '' || /^[-*]\s/.test(l));
+        if (isList && lines.some(l => l.length > 0)) {
+            const items = lines.filter(l => l.length > 0).map(l => {
+                const content = l.replace(/^[-*]\s+/, '');
+                return '<li>' + applyInlineFormatting(escape(content).replace(/\n/g, ' ')) + '</li>';
+            }).join('');
+            out.push('<ul class="description-list">' + items + '</ul>');
+        } else {
+            const escaped = escape(block).replace(/\n/g, '<br>');
+            out.push('<p class="description-para">' + applyInlineFormatting(escaped) + '</p>');
+        }
+    }
+    return out.join('');
+}
+
+/**
+ * Insère du texte autour de la sélection dans un textarea (pour la barre de formatage).
+ */
+function wrapSelectionInTextarea(textarea, before, after) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.slice(start, end);
+    const placeholder = selected.length > 0 ? selected : 'texte';
+    const newText = text.slice(0, start) + before + placeholder + after + text.slice(end);
+    textarea.value = newText;
+    if (selected.length > 0) {
+        textarea.selectionStart = start + before.length;
+        textarea.selectionEnd = end + before.length;
+    } else {
+        textarea.selectionStart = start + before.length;
+        textarea.selectionEnd = textarea.selectionStart + placeholder.length;
+    }
+    textarea.focus();
+}
+
+/**
+ * Insère un préfixe au début de la ligne courante (pour listes à puces).
+ */
+function insertPrefixAtLineStart(textarea, prefix) {
+    const start = textarea.selectionStart;
+    const text = textarea.value;
+    let lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    const before = text.slice(0, lineStart);
+    const after = text.slice(lineStart);
+    textarea.value = before + prefix + after;
+    textarea.selectionStart = textarea.selectionEnd = start + prefix.length;
+    textarea.focus();
+}
+
+/**
+ * Initialise les barres d'outils de formatage (gras, italique, souligné, liste) au-dessus des textareas description.
+ */
+function initDescriptionToolbars() {
+    document.querySelectorAll('.description-toolbar').forEach(toolbar => {
+        const targetId = toolbar.getAttribute('data-target');
+        const textarea = document.getElementById(targetId);
+        if (!textarea) return;
+        toolbar.querySelectorAll('.toolbar-btn[data-wrap]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const wrap = this.getAttribute('data-wrap');
+                wrapSelectionInTextarea(textarea, wrap, wrap);
+            });
+        });
+        toolbar.querySelectorAll('.toolbar-btn[data-prefix]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const prefix = this.getAttribute('data-prefix');
+                insertPrefixAtLineStart(textarea, prefix);
+            });
+        });
+    });
+}
+
+/**
+ * Scroll en douceur vers une section
+ * @param {string} sectionId - Id de la section (ex: 'articles', 'projets')
+ */
+function scrollToSection(sectionId) {
+    const section = document.getElementById(sectionId);
+    if (section) {
+        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+}
+
+// ============================================
+// PROTECTION ACCÈS ADMIN
+// ============================================
+
+/**
+ * Affiche ou masque l'interface d'administration selon la session
+ */
+function setAdminUIVisibility(isAdmin) {
+    const adminOnly = document.querySelectorAll('.admin-only');
+    const unlockLink = document.getElementById('adminUnlockTrigger');
+    const logoutLink = document.getElementById('adminLogoutTrigger');
+    adminOnly.forEach(el => {
+        el.style.display = isAdmin ? '' : 'none';
+    });
+    if (unlockLink) unlockLink.style.display = isAdmin ? 'none' : '';
+    if (logoutLink) logoutLink.style.display = isAdmin ? '' : 'none';
+}
+
+/**
+ * Initialise la protection : masque les boutons admin sauf si déjà authentifié
+ */
+function initAdminGate() {
+    const isUnlocked = localStorage.getItem(ADMIN_STORAGE_KEY) === '1';
+    setAdminUIVisibility(!!isUnlocked);
+
+    const unlockTrigger = document.getElementById('adminUnlockTrigger');
+    const logoutTrigger = document.getElementById('adminLogoutTrigger');
+
+    if (unlockTrigger) {
+        unlockTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            const password = prompt('Mot de passe administration :');
+            if (password === ADMIN_PASSWORD) {
+                localStorage.setItem(ADMIN_STORAGE_KEY, '1');
+                setAdminUIVisibility(true);
+                showToast('Mode admin activé.', 'success');
+            } else if (password !== null) {
+                showToast('Mot de passe incorrect.', 'info');
+            }
+        });
+    }
+
+    if (logoutTrigger) {
+        logoutTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem(ADMIN_STORAGE_KEY);
+            setAdminUIVisibility(false);
+            document.getElementById('adminPanel') && (document.getElementById('adminPanel').style.display = 'none');
+            document.getElementById('adminProjectPanel') && (document.getElementById('adminProjectPanel').style.display = 'none');
+            document.getElementById('adminExperiencePanel') && (document.getElementById('adminExperiencePanel').style.display = 'none');
+            showToast('Mode admin désactivé.', 'info');
+        });
+    }
+}
+
 // ============================================
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+    initAdminGate();
     initTranslations();
     initNavigation();
     loadProjects();
+    loadExperiences();
     loadArticles();
     loadSkills();
     initContactForm();
@@ -32,6 +252,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initScrollAnimations();
     initLanguageSelector();
     initArticleAdmin();
+    initProjectAdmin();
+    initExperienceAdmin();
+    initDescriptionToolbars();
 });
 
 // ============================================
@@ -125,7 +348,7 @@ function updateActiveNavLink() {
 // ============================================
 
 /**
- * Charge les projets depuis projects.json et les affiche
+ * Charge les projets depuis projects.json et localStorage, puis les affiche
  */
 async function loadProjects() {
     const projectsGrid = document.getElementById('projectsGrid');
@@ -136,14 +359,20 @@ async function loadProjects() {
     }
     
     try {
-        const response = await fetch('projects.json');
-        if (!response.ok) {
-            throw new Error('Impossible de charger les projets');
+        let projectsFromFile = [];
+        try {
+            const response = await fetch('projects.json');
+            if (response.ok) {
+                projectsFromFile = await response.json();
+            }
+        } catch (e) {
+            console.warn('Fichier projects.json non disponible, utilisation des projets locaux uniquement.');
         }
         
-        const projects = await response.json();
+        const localProjects = getLocalProjects();
+        const allProjects = [...localProjects, ...projectsFromFile];
         
-        if (projects.length === 0) {
+        if (allProjects.length === 0) {
             const noProjectsText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.noProjects) 
                 ? translations[currentLang].projects.noProjects 
                 : 'Aucun projet disponible pour le moment.';
@@ -152,7 +381,7 @@ async function loadProjects() {
         }
         
         projectsGrid.innerHTML = '';
-        projects.forEach(project => {
+        allProjects.forEach(project => {
             const projectCard = createProjectCard(project);
             projectsGrid.appendChild(projectCard);
         });
@@ -168,6 +397,65 @@ async function loadProjects() {
             `;
         }
     }
+}
+
+/**
+ * Récupère les projets stockés dans localStorage
+ */
+function getLocalProjects() {
+    try {
+        const stored = localStorage.getItem('portfolio-projects');
+        return stored ? JSON.parse(stored) : [];
+    } catch (error) {
+        console.error('Erreur lors de la lecture des projets locaux:', error);
+        return [];
+    }
+}
+
+/**
+ * Sauvegarde un projet dans localStorage
+ */
+function saveLocalProject(project) {
+    const projects = getLocalProjects();
+    projects.push(project);
+    localStorage.setItem('portfolio-projects', JSON.stringify(projects));
+}
+
+/**
+ * Supprime tous les projets locaux
+ */
+function clearLocalProjects() {
+    localStorage.removeItem('portfolio-projects');
+}
+
+/**
+ * Exporte tous les projets (JSON + localStorage) en fichier JSON
+ */
+function exportProjects() {
+    const localProjects = getLocalProjects();
+    fetch('projects.json')
+        .then(response => response.ok ? response.json() : [])
+        .then(projectsFromFile => {
+            const allProjects = [...localProjects, ...projectsFromFile];
+            const dataStr = JSON.stringify(allProjects, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'projects.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+            const dataStr = JSON.stringify(localProjects, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'projects.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
 }
 
 /**
@@ -191,7 +479,8 @@ function createProjectCard(project) {
     `;
     
     // Technologies utilisées
-    const techTags = project.technologies
+    const technologies = Array.isArray(project.technologies) ? project.technologies : [];
+    const techTags = technologies
         .map(tech => `<span class="tech-tag">${tech}</span>`)
         .join('');
     
@@ -223,6 +512,7 @@ function createProjectCard(project) {
         `;
     }
     
+    const descriptionHtml = formatDescriptionAsParagraphs(project.description);
     card.innerHTML = `
         ${imageHTML}
         <div class="project-content">
@@ -230,13 +520,161 @@ function createProjectCard(project) {
                 ${project.title}
                 ${cardanoBadge}
             </h3>
-            <p class="project-description">${project.description}</p>
+            <div class="project-description description-block">${descriptionHtml}</div>
             <div class="project-tech">${techTags}</div>
             <div class="project-links">${linksHTML}</div>
         </div>
     `;
     
     return card;
+}
+
+// ============================================
+// CHARGEMENT DES EXPÉRIENCES
+// ============================================
+
+/**
+ * Charge les expériences depuis experiences.json et localStorage, puis les affiche
+ */
+async function loadExperiences() {
+    const listEl = document.getElementById('experiencesList');
+    if (!listEl) return;
+    try {
+        let fromFile = [];
+        try {
+            const response = await fetch('experiences.json');
+            if (response.ok) fromFile = await response.json();
+        } catch (e) {
+            console.warn('experiences.json non disponible.');
+        }
+        const local = getLocalExperiences();
+        const all = [...local, ...fromFile];
+        if (all.length === 0) {
+            const msg = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.noExperiences)
+                ? translations[currentLang].experiences.noExperiences
+                : 'Aucune expérience renseignée pour le moment.';
+            listEl.innerHTML = `<p class="loading">${msg}</p>`;
+            return;
+        }
+        listEl.innerHTML = '';
+        listEl.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
+        const totalExperiences = all.length;
+        all.forEach((exp, index) => {
+            const el = createExperienceItem(exp);
+            if (index >= INITIAL_DISPLAY_COUNT) el.classList.add('item-over-limit');
+            listEl.appendChild(el);
+        });
+        const container = listEl.parentNode;
+        const existingBtn = document.getElementById('experiencesLoadMoreBtn');
+        if (existingBtn && existingBtn.parentNode) existingBtn.parentNode.remove();
+        if (totalExperiences > INITIAL_DISPLAY_COUNT) {
+            const wrap = document.createElement('div');
+            wrap.className = 'load-more-wrap';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-secondary btn-load-more';
+            btn.id = 'experiencesLoadMoreBtn';
+            const loadMoreText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.loadMore) ? translations[currentLang].experiences.loadMore : 'Voir plus';
+            const loadLessText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.loadLess) ? translations[currentLang].experiences.loadLess : 'Voir moins';
+            btn.innerHTML = '<i class="fas fa-chevron-down"></i> <span class="btn-load-more-text">' + loadMoreText + '</span>';
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                let v = parseInt(listEl.dataset.visibleCount || '0', 10);
+                const isShowingMore = v < totalExperiences;
+                if (isShowingMore) {
+                    v = Math.min(v + 3, totalExperiences);
+                    listEl.dataset.visibleCount = String(v);
+                    for (let i = 0; i < listEl.children.length; i++) {
+                        listEl.children[i].classList.toggle('item-over-limit', i >= v);
+                    }
+                    btn.querySelector('.btn-load-more-text').textContent = v >= totalExperiences ? loadLessText : loadMoreText;
+                    btn.querySelector('i').className = v >= totalExperiences ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                } else {
+                    listEl.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
+                    for (let i = 0; i < listEl.children.length; i++) {
+                        listEl.children[i].classList.toggle('item-over-limit', i >= INITIAL_DISPLAY_COUNT);
+                    }
+                    btn.querySelector('.btn-load-more-text').textContent = loadMoreText;
+                    btn.querySelector('i').className = 'fas fa-chevron-down';
+                }
+                const experiencesSection = document.getElementById('experiences');
+                if (experiencesSection) experiencesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            wrap.appendChild(btn);
+            container.appendChild(wrap);
+        }
+    } catch (err) {
+        console.error('Erreur chargement expériences:', err);
+        listEl.innerHTML = '<p class="loading">Erreur lors du chargement des expériences.</p>';
+    }
+}
+
+function getLocalExperiences() {
+    try {
+        const s = localStorage.getItem('portfolio-experiences');
+        return s ? JSON.parse(s) : [];
+    } catch (e) {
+        return [];
+    }
+}
+
+function saveLocalExperience(experience) {
+    const list = getLocalExperiences();
+    list.push(experience);
+    localStorage.setItem('portfolio-experiences', JSON.stringify(list));
+}
+
+function clearLocalExperiences() {
+    localStorage.removeItem('portfolio-experiences');
+}
+
+function exportExperiences() {
+    const local = getLocalExperiences();
+    fetch('experiences.json')
+        .then(r => r.ok ? r.json() : [])
+        .then(fromFile => {
+            const all = [...local, ...fromFile];
+            const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'experiences.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        })
+        .catch(() => {
+            const blob = new Blob([JSON.stringify(local, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'experiences.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+}
+
+/**
+ * Crée un élément DOM pour une expérience
+ */
+function createExperienceItem(exp) {
+    const item = document.createElement('div');
+    item.className = 'experience-item';
+    const period = exp.period ? `<p class="experience-period"><i class="fas fa-calendar-alt"></i> ${exp.period}</p>` : '';
+    const link = exp.link
+        ? `<a href="${exp.link}" target="_blank" rel="noopener" class="experience-link"><i class="fas fa-external-link-alt"></i> En savoir plus</a>`
+        : '';
+    const descriptionHtml = formatDescriptionAsParagraphs(exp.description);
+    item.innerHTML = `
+        <div class="experience-header">
+            <h3 class="experience-title">${exp.title}</h3>
+            ${exp.organization ? `<span class="experience-org">${exp.organization}</span>` : ''}
+        </div>
+        ${period}
+        <div class="experience-description description-block">${descriptionHtml}</div>
+        ${link}
+    `;
+    return item;
 }
 
 // ============================================
@@ -278,10 +716,53 @@ async function loadArticles() {
         }
         
         articlesList.innerHTML = '';
-        allArticles.forEach(article => {
+        articlesList.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
+        const totalArticles = allArticles.length;
+        allArticles.forEach((article, index) => {
             const articleItem = createArticleItem(article);
+            if (index >= INITIAL_DISPLAY_COUNT) articleItem.classList.add('item-over-limit');
             articlesList.appendChild(articleItem);
         });
+        const container = articlesList.parentNode;
+        const existingBtn = document.getElementById('articlesLoadMoreBtn');
+        if (existingBtn && existingBtn.parentNode) existingBtn.parentNode.remove();
+        if (totalArticles > INITIAL_DISPLAY_COUNT) {
+            const wrap = document.createElement('div');
+            wrap.className = 'load-more-wrap';
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-secondary btn-load-more';
+            btn.id = 'articlesLoadMoreBtn';
+            const loadMoreText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.loadMore) ? translations[currentLang].articles.loadMore : 'Voir plus';
+            const loadLessText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.loadLess) ? translations[currentLang].articles.loadLess : 'Voir moins';
+            btn.innerHTML = '<i class="fas fa-chevron-down"></i> <span class="btn-load-more-text">' + loadMoreText + '</span>';
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                let v = parseInt(articlesList.dataset.visibleCount || '0', 10);
+                const isShowingMore = v < totalArticles;
+                if (isShowingMore) {
+                    v = Math.min(v + 3, totalArticles);
+                    articlesList.dataset.visibleCount = String(v);
+                    for (let i = 0; i < articlesList.children.length; i++) {
+                        articlesList.children[i].classList.toggle('item-over-limit', i >= v);
+                    }
+                    btn.querySelector('.btn-load-more-text').textContent = v >= totalArticles ? loadLessText : loadMoreText;
+                    btn.querySelector('i').className = v >= totalArticles ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
+                } else {
+                    articlesList.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
+                    for (let i = 0; i < articlesList.children.length; i++) {
+                        articlesList.children[i].classList.toggle('item-over-limit', i >= INITIAL_DISPLAY_COUNT);
+                    }
+                    btn.querySelector('.btn-load-more-text').textContent = loadMoreText;
+                    btn.querySelector('i').className = 'fas fa-chevron-down';
+                }
+                var articlesSection = document.getElementById('articles');
+                if (articlesSection) articlesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+            wrap.appendChild(btn);
+            container.appendChild(wrap);
+        }
         
     } catch (error) {
         console.error('Erreur lors du chargement des articles:', error);
@@ -375,11 +856,12 @@ function createArticleItem(article) {
     const readArticleText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.readArticle) 
         ? translations[currentLang].articles.readArticle 
         : 'Lire l\'article';
+    const descriptionHtml = formatDescriptionAsParagraphs(article.description);
     item.innerHTML = `
         <h3 class="article-title">
             <a href="${article.link}" target="_blank" rel="noopener">${article.title}</a>
         </h3>
-        <p class="article-description">${article.description}</p>
+        <div class="article-description description-block">${descriptionHtml}</div>
         <a href="${article.link}" target="_blank" rel="noopener" class="article-link">
             ${readArticleText} <i class="fas fa-arrow-right"></i>
         </a>
@@ -408,46 +890,77 @@ function initContactForm() {
 
 /**
  * Gère la soumission du formulaire de contact
+ * Utilise Formspree si FORMSPREE_FORM_ID est défini, sinon mailto vers CONTACT_EMAIL.
  * @param {HTMLFormElement} form - Le formulaire
  */
 function handleContactFormSubmit(form) {
     const formData = new FormData(form);
-    const data = {
-        name: formData.get('name'),
-        email: formData.get('email'),
-        subject: formData.get('subject'),
-        message: formData.get('message')
-    };
-    
-    // Ici, vous pouvez ajouter l'intégration avec un service d'email
-    // Par exemple : EmailJS, Formspree, ou votre propre backend
-    
-    // Pour l'instant, on simule juste l'envoi
-    console.log('Données du formulaire:', data);
-    
-    // Afficher un message de succès
     const submitButton = form.querySelector('button[type="submit"]');
     const originalText = submitButton.innerHTML;
     
-    submitButton.innerHTML = '<i class="fas fa-check"></i> Message envoyé !';
-    submitButton.disabled = true;
-    submitButton.style.backgroundColor = '#10b981';
+    function setLoading(loading) {
+        submitButton.disabled = loading;
+        if (loading) {
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi...';
+        } else {
+            submitButton.innerHTML = originalText;
+        }
+    }
     
-    // Réinitialiser le formulaire
+    if (FORMSPREE_FORM_ID) {
+        setLoading(true);
+        // Extraire uniquement l'ID si l'URL complète a été collée (ex: https://formspree.io/f/mjgearjz -> mjgearjz)
+        const formId = String(FORMSPREE_FORM_ID).trim().replace(/^https?:\/\/formspree\.io\/f\//i, '').split(/[\/?#]/)[0] || '';
+        if (!formId) {
+            setLoading(false);
+            showToast('Configuration Formspree invalide. Utilisez l\'email direct.', 'info');
+            return;
+        }
+        const body = new FormData(form);
+        body.append('_replyto', formData.get('email'));
+        body.append('_subject', formData.get('subject'));
+        fetch('https://formspree.io/f/' + formId, {
+            method: 'POST',
+            body: body,
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(async (response) => {
+                const data = await response.json().catch(() => ({}));
+                if (response.ok) {
+                    form.reset();
+                    showToast('Message envoyé ! Vous recevrez une réponse sous peu.', 'success');
+                } else {
+                    const msg = (data && data.error) ? data.error : 'Erreur ' + response.status;
+                    throw new Error(msg);
+                }
+            })
+            .catch((err) => {
+                const message = err && err.message && !err.message.startsWith('Erreur envoi') ? err.message : 'Erreur lors de l\'envoi. Réessayez ou contactez-moi par email.';
+                showToast(message, 'info');
+            })
+            .finally(() => setLoading(false));
+        return;
+    }
+    
+    // Fallback : mailto (ouvre le client mail avec le message prérempli)
+    const name = encodeURIComponent(formData.get('name') || '');
+    const email = encodeURIComponent(formData.get('email') || '');
+    const subject = encodeURIComponent(formData.get('subject') || '');
+    const message = encodeURIComponent(
+        (formData.get('message') || '') + '\n\n--\nEnvoyé depuis le formulaire portfolio\nDe: ' + (formData.get('name') || '') + ' <' + (formData.get('email') || '') + '>'
+    );
+    const mailtoUrl = 'mailto:' + CONTACT_EMAIL + '?subject=' + subject + '&body=' + message;
     form.reset();
-    
-    // Réinitialiser le bouton après 3 secondes
+    window.location.href = mailtoUrl;
+    showToast('Ouverture de votre client mail. Si rien ne s\'ouvre, écrivez à ' + CONTACT_EMAIL, 'info');
     setTimeout(() => {
         submitButton.innerHTML = originalText;
         submitButton.disabled = false;
-        submitButton.style.backgroundColor = '';
-    }, 3000);
+    }, 1500);
     
-    // Note : Pour un vrai envoi d'email, vous devrez configurer un service
-    // Exemple avec EmailJS (nécessite une clé API) :
-    // emailjs.send('service_id', 'template_id', data, 'user_id')
-    //     .then(() => { /* succès */ })
-    //     .catch(() => { /* erreur */ });
+    // Pour recevoir les messages directement par email sans ouvrir le client du visiteur :
+    // 1. Créez un compte sur formspree.io, 2. Créez un formulaire (email = CONTACT_EMAIL),
+    // 3. Copiez l'ID du formulaire (ex: xjvqklop) et assignez-le à FORMSPREE_FORM_ID ci-dessus.
 }
 
 // ============================================
@@ -455,28 +968,23 @@ function handleContactFormSubmit(form) {
 // ============================================
 
 /**
- * Initialise l'aperçu du CV
- * Charge le CV automatiquement au chargement de la page
+ * Initialise l'aperçu du CV : bouton "Voir le CV" pour afficher/masquer l'aperçu, téléchargement
  */
 function initCVPreview() {
     const cvPreview = document.getElementById('cvPreview');
+    const cvPreviewContainer = document.getElementById('cvPreviewContainer');
+    const toggleBtn = document.getElementById('toggleCvPreviewBtn');
     const downloadCvBtn = document.getElementById('downloadCvBtn');
     
-    // Nom du fichier CV (avec espace)
     const cvFileName = 'CV Olivier.pdf';
     const cvPath = `assets/cv/${cvFileName}`;
-    
-    // Encoder l'URL pour l'iframe (les espaces doivent être encodés en %20)
     const encodedPath = cvPath.replace(/ /g, '%20');
+    const cvFullUrl = new URL(cvPath, window.location.href).href;
     
-    // Configurer le lien de téléchargement directement
     if (downloadCvBtn) {
-        downloadCvBtn.href = encodedPath;
+        downloadCvBtn.href = cvFullUrl;
         downloadCvBtn.download = cvFileName;
-        
-        // Ajouter un gestionnaire de clic pour forcer le téléchargement si nécessaire
         downloadCvBtn.addEventListener('click', function(e) {
-            // Si le téléchargement ne fonctionne pas automatiquement, forcer le téléchargement
             fetch(encodedPath)
                 .then(response => response.blob())
                 .then(blob => {
@@ -489,17 +997,29 @@ function initCVPreview() {
                     window.URL.revokeObjectURL(url);
                     document.body.removeChild(a);
                 })
-                .catch(error => {
-                    console.error('Erreur lors du téléchargement du CV:', error);
-                    // Si le fetch échoue, laisser le navigateur gérer le lien normal
-                });
+                .catch(() => {});
         });
     }
     
-    // Charger le CV dans l'iframe
-    if (cvPreview) {
-        cvPreview.src = encodedPath;
-        cvPreview.style.display = 'block';
+    const cvOpenInNewTab = document.getElementById('cvOpenInNewTab');
+    if (cvOpenInNewTab) cvOpenInNewTab.href = cvFullUrl;
+    
+    if (toggleBtn && cvPreviewContainer && cvPreview) {
+        toggleBtn.addEventListener('click', function() {
+            const isVisible = cvPreviewContainer.style.display !== 'none';
+            const viewText = (translations[currentLang] && translations[currentLang].cv && translations[currentLang].cv.view) ? translations[currentLang].cv.view : 'Voir le CV';
+            const hideText = (translations[currentLang] && translations[currentLang].cv && translations[currentLang].cv.hide) ? translations[currentLang].cv.hide : 'Masquer le CV';
+            if (!isVisible) {
+                if (!cvPreview.src) cvPreview.src = cvFullUrl;
+                cvPreviewContainer.style.display = 'block';
+                toggleBtn.querySelector('span').textContent = hideText;
+                toggleBtn.querySelector('i').className = 'fas fa-eye-slash';
+            } else {
+                cvPreviewContainer.style.display = 'none';
+                toggleBtn.querySelector('span').textContent = viewText;
+                toggleBtn.querySelector('i').className = 'fas fa-eye';
+            }
+        });
     }
 }
 
@@ -633,7 +1153,7 @@ function createSkillItem(skill) {
  */
 function initScrollAnimations() {
     // Sélectionner tous les éléments à animer
-    const animatedElements = document.querySelectorAll('.section, .skill-category, .project-card, .article-item');
+    const animatedElements = document.querySelectorAll('.section, .skill-category, .project-card, .article-item, .experience-item');
     
     
     // Créer un Intersection Observer pour détecter quand les éléments entrent dans la vue
@@ -655,6 +1175,8 @@ function initScrollAnimations() {
                         entry.target.style.animation = isEven 
                             ? 'slideInLeft 0.6s ease forwards' 
                             : 'slideInRight 0.6s ease forwards';
+                    } else if (entry.target.classList.contains('experience-item')) {
+                        entry.target.style.animation = 'slideInLeft 0.6s ease forwards';
                     }
                 }, index * 100);
                 
@@ -779,8 +1301,9 @@ function changeLanguage(lang) {
         langDropdown.classList.remove('active');
     }
     
-    // Recharger les projets et articles pour mettre à jour les textes dynamiques
+    // Recharger les projets, expériences et articles pour mettre à jour les textes dynamiques
     loadProjects();
+    loadExperiences();
     loadArticles();
 }
 
@@ -834,10 +1357,16 @@ function initArticleAdmin() {
     const exportBtn = document.getElementById('exportArticlesBtn');
     const clearBtn = document.getElementById('clearLocalArticlesBtn');
     
-    // Ouvrir le panneau d'administration
+    // Ouvrir le panneau d'administration (réinitialiser le mode édition)
     if (adminBtn && adminPanel) {
         adminBtn.addEventListener('click', function() {
             adminPanel.style.display = 'flex';
+            if (addArticleForm) {
+                addArticleForm.dataset.editingIndex = '';
+                addArticleForm.reset();
+                const submitBtn = document.getElementById('articleSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'article';
+            }
             updateLocalArticlesList();
         });
     }
@@ -858,32 +1387,34 @@ function initArticleAdmin() {
         });
     }
     
-    // Gérer l'ajout d'un article
+    // Gérer l'ajout ou la mise à jour d'un article
     if (addArticleForm) {
         addArticleForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            
             const title = document.getElementById('articleTitle').value;
             const description = document.getElementById('articleDescription').value;
             const link = document.getElementById('articleLink').value;
             const date = document.getElementById('articleDate').value || new Date().toISOString().split('T')[0];
-            
-            const article = {
-                title: title,
-                description: description,
-                link: link,
-                date: date
-            };
-            
-            saveLocalArticle(article);
-            addArticleForm.reset();
-            
-            // Recharger les articles
+            const article = { title: title, description: description, link: link, date: date };
+            const editingIndex = addArticleForm.dataset.editingIndex;
+            if (editingIndex !== undefined && editingIndex !== '') {
+                const articles = getLocalArticles();
+                articles[parseInt(editingIndex, 10)] = article;
+                localStorage.setItem('portfolio-articles', JSON.stringify(articles));
+                addArticleForm.dataset.editingIndex = '';
+                addArticleForm.reset();
+                const submitBtn = document.getElementById('articleSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'article';
+                showToast('Article mis à jour !', 'success');
+            } else {
+                saveLocalArticle(article);
+                addArticleForm.reset();
+                showToast('Article ajouté avec succès !', 'success');
+            }
             loadArticles();
             updateLocalArticlesList();
-            
-            // Afficher un message de succès
-            alert('Article ajouté avec succès !');
+            if (adminPanel) adminPanel.style.display = 'none';
+            scrollToSection('articles');
         });
     }
     
@@ -891,7 +1422,7 @@ function initArticleAdmin() {
     if (exportBtn) {
         exportBtn.addEventListener('click', function() {
             exportArticles();
-            alert('Fichier articles.json téléchargé ! Vous pouvez le remplacer dans votre projet.');
+            showToast('Fichier articles.json téléchargé !', 'info');
         });
     }
     
@@ -902,7 +1433,7 @@ function initArticleAdmin() {
                 clearLocalArticles();
                 loadArticles();
                 updateLocalArticlesList();
-                alert('Articles locaux effacés !');
+                showToast('Articles locaux effacés.', 'info');
             }
         });
     }
@@ -929,21 +1460,354 @@ function updateLocalArticlesList() {
                 <p>${article.description}</p>
                 <small>${article.date || 'Date non spécifiée'}</small>
             </div>
-            <button class="btn-remove-article" data-index="${index}">
-                <i class="fas fa-trash"></i>
-            </button>
+            <div class="admin-item-actions">
+                <button type="button" class="btn-edit btn-edit-article" data-index="${index}" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-remove-article" data-index="${index}" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
         </div>
     `).join('');
     
-    // Ajouter les gestionnaires de suppression
+    const addArticleForm = document.getElementById('addArticleForm');
+    const articleSubmitBtn = document.getElementById('articleSubmitBtn');
+    localArticlesList.querySelectorAll('.btn-edit-article').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const articles = getLocalArticles();
+            const a = articles[index];
+            if (!a) return;
+            document.getElementById('articleTitle').value = a.title || '';
+            document.getElementById('articleDescription').value = a.description || '';
+            document.getElementById('articleLink').value = a.link || '';
+            document.getElementById('articleDate').value = a.date || '';
+            addArticleForm.dataset.editingIndex = String(index);
+            if (articleSubmitBtn) articleSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        });
+    });
     localArticlesList.querySelectorAll('.btn-remove-article').forEach(btn => {
         btn.addEventListener('click', function() {
-            const index = parseInt(this.getAttribute('data-index'));
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            if (addArticleForm && addArticleForm.dataset.editingIndex === String(index)) {
+                addArticleForm.reset();
+                addArticleForm.dataset.editingIndex = '';
+                if (articleSubmitBtn) articleSubmitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'article';
+            }
             const articles = getLocalArticles();
             articles.splice(index, 1);
             localStorage.setItem('portfolio-articles', JSON.stringify(articles));
             loadArticles();
             updateLocalArticlesList();
+            showToast('Article supprimé.', 'info');
+        });
+    });
+}
+
+// ============================================
+// ADMINISTRATION DES PROJETS
+// ============================================
+
+/**
+ * Initialise le système d'administration des projets
+ */
+function initProjectAdmin() {
+    const adminBtn = document.getElementById('adminProjectBtn');
+    const adminPanel = document.getElementById('adminProjectPanel');
+    const closeAdminBtn = document.getElementById('closeAdminProjectBtn');
+    const addProjectForm = document.getElementById('addProjectForm');
+    const exportBtn = document.getElementById('exportProjectsBtn');
+    const clearBtn = document.getElementById('clearLocalProjectsBtn');
+    
+    if (adminBtn && adminPanel) {
+        adminBtn.addEventListener('click', function() {
+            adminPanel.style.display = 'flex';
+            if (addProjectForm) {
+                addProjectForm.dataset.editingIndex = '';
+                addProjectForm.reset();
+                const submitBtn = document.getElementById('projectSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter le projet';
+            }
+            updateLocalProjectsList();
+        });
+    }
+    
+    if (closeAdminBtn && adminPanel) {
+        closeAdminBtn.addEventListener('click', function() {
+            adminPanel.style.display = 'none';
+        });
+    }
+    
+    if (adminPanel) {
+        adminPanel.addEventListener('click', function(e) {
+            if (e.target === adminPanel) {
+                adminPanel.style.display = 'none';
+            }
+        });
+    }
+    
+    if (addProjectForm) {
+        addProjectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const title = document.getElementById('projectTitle').value;
+            const description = document.getElementById('projectDescription').value;
+            const image = document.getElementById('projectImage').value.trim() || null;
+            const technologiesInput = document.getElementById('projectTechnologies').value;
+            const technologies = technologiesInput ? technologiesInput.split(',').map(t => t.trim()).filter(Boolean) : [];
+            const github = document.getElementById('projectGithub').value.trim() || null;
+            const demo = document.getElementById('projectDemo').value.trim() || null;
+            const cardano = document.getElementById('projectCardano').checked;
+            const project = { title: title, description: description, image: image, technologies: technologies, github: github, demo: demo, cardano: cardano };
+            const editingIndex = addProjectForm.dataset.editingIndex;
+            if (editingIndex !== undefined && editingIndex !== '') {
+                const projects = getLocalProjects();
+                projects[parseInt(editingIndex, 10)] = project;
+                localStorage.setItem('portfolio-projects', JSON.stringify(projects));
+                addProjectForm.dataset.editingIndex = '';
+                addProjectForm.reset();
+                const submitBtn = document.getElementById('projectSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter le projet';
+                showToast('Projet mis à jour !', 'success');
+            } else {
+                saveLocalProject(project);
+                addProjectForm.reset();
+                showToast('Projet ajouté avec succès !', 'success');
+            }
+            loadProjects();
+            updateLocalProjectsList();
+            if (adminPanel) adminPanel.style.display = 'none';
+            scrollToSection('projets');
+        });
+    }
+    
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportProjects();
+            showToast('Fichier projects.json téléchargé !', 'info');
+        });
+    }
+    
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (confirm('Êtes-vous sûr de vouloir effacer tous les projets ajoutés localement ?')) {
+                clearLocalProjects();
+                loadProjects();
+                updateLocalProjectsList();
+                showToast('Projets locaux effacés.', 'info');
+            }
+        });
+    }
+}
+
+/**
+ * Met à jour la liste des projets locaux dans le panneau d'administration
+ */
+function updateLocalProjectsList() {
+    const localProjectsList = document.getElementById('localProjectsList');
+    if (!localProjectsList) return;
+    
+    const projects = getLocalProjects();
+    
+    if (projects.length === 0) {
+        localProjectsList.innerHTML = '<p style="color: var(--text-secondary);">Aucun projet ajouté localement.</p>';
+        return;
+    }
+    
+    localProjectsList.innerHTML = projects.map((project, index) => `
+        <div class="admin-article-item admin-project-item">
+            <div class="admin-article-info admin-project-info">
+                <strong>${project.title}</strong>
+                <p>${project.description}</p>
+                <small>${project.technologies && project.technologies.length ? project.technologies.join(', ') : 'Aucune technologie'}</small>
+            </div>
+            <div class="admin-item-actions">
+                <button type="button" class="btn-edit btn-edit-project" data-index="${index}" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-remove-article btn-remove-project" data-index="${index}" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    
+    const addProjectForm = document.getElementById('addProjectForm');
+    const projectSubmitBtn = document.getElementById('projectSubmitBtn');
+    localProjectsList.querySelectorAll('.btn-edit-project').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const projects = getLocalProjects();
+            const p = projects[index];
+            if (!p) return;
+            document.getElementById('projectTitle').value = p.title || '';
+            document.getElementById('projectDescription').value = p.description || '';
+            document.getElementById('projectImage').value = p.image || '';
+            document.getElementById('projectTechnologies').value = (p.technologies && p.technologies.length) ? p.technologies.join(', ') : '';
+            document.getElementById('projectGithub').value = p.github || '';
+            document.getElementById('projectDemo').value = p.demo || '';
+            document.getElementById('projectCardano').checked = !!p.cardano;
+            addProjectForm.dataset.editingIndex = String(index);
+            if (projectSubmitBtn) projectSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        });
+    });
+    localProjectsList.querySelectorAll('.btn-remove-project').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            if (addProjectForm && addProjectForm.dataset.editingIndex === String(index)) {
+                addProjectForm.reset();
+                addProjectForm.dataset.editingIndex = '';
+                if (projectSubmitBtn) projectSubmitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter le projet';
+            }
+            const projects = getLocalProjects();
+            projects.splice(index, 1);
+            localStorage.setItem('portfolio-projects', JSON.stringify(projects));
+            loadProjects();
+            updateLocalProjectsList();
+            showToast('Projet supprimé.', 'info');
+        });
+    });
+}
+
+// ============================================
+// ADMINISTRATION DES EXPÉRIENCES
+// ============================================
+
+function initExperienceAdmin() {
+    const adminBtn = document.getElementById('adminExperienceBtn');
+    const adminPanel = document.getElementById('adminExperiencePanel');
+    const closeBtn = document.getElementById('closeAdminExperienceBtn');
+    const form = document.getElementById('addExperienceForm');
+    const exportBtn = document.getElementById('exportExperiencesBtn');
+    const clearBtn = document.getElementById('clearLocalExperiencesBtn');
+    
+    if (adminBtn && adminPanel) {
+        adminBtn.addEventListener('click', function() {
+            adminPanel.style.display = 'flex';
+            if (form) {
+                form.dataset.editingIndex = '';
+                form.reset();
+                const submitBtn = document.getElementById('experienceSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'expérience';
+            }
+            updateLocalExperiencesList();
+        });
+    }
+    if (closeBtn && adminPanel) {
+        closeBtn.addEventListener('click', function() {
+            adminPanel.style.display = 'none';
+        });
+    }
+    if (adminPanel) {
+        adminPanel.addEventListener('click', function(e) {
+            if (e.target === adminPanel) adminPanel.style.display = 'none';
+        });
+    }
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const experience = {
+                title: document.getElementById('experienceTitle').value,
+                organization: document.getElementById('experienceOrganization').value.trim() || null,
+                description: document.getElementById('experienceDescription').value,
+                period: document.getElementById('experiencePeriod').value.trim() || null,
+                link: document.getElementById('experienceLink').value.trim() || null
+            };
+            const editingIndex = form.dataset.editingIndex;
+            if (editingIndex !== undefined && editingIndex !== '') {
+                const list = getLocalExperiences();
+                list[parseInt(editingIndex, 10)] = experience;
+                localStorage.setItem('portfolio-experiences', JSON.stringify(list));
+                form.dataset.editingIndex = '';
+                form.reset();
+                const submitBtn = document.getElementById('experienceSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'expérience';
+                showToast('Expérience mise à jour !', 'success');
+            } else {
+                saveLocalExperience(experience);
+                form.reset();
+                showToast('Expérience ajoutée avec succès !', 'success');
+            }
+            loadExperiences();
+            updateLocalExperiencesList();
+            if (adminPanel) adminPanel.style.display = 'none';
+            scrollToSection('experiences');
+        });
+    }
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function() {
+            exportExperiences();
+            showToast('Fichier experiences.json téléchargé !', 'info');
+        });
+    }
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function() {
+            if (confirm('Effacer toutes les expériences ajoutées localement ?')) {
+                clearLocalExperiences();
+                loadExperiences();
+                updateLocalExperiencesList();
+                showToast('Expériences locales effacées.', 'info');
+            }
+        });
+    }
+}
+
+function updateLocalExperiencesList() {
+    const list = document.getElementById('localExperiencesList');
+    if (!list) return;
+    const experiences = getLocalExperiences();
+    if (experiences.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-secondary);">Aucune expérience ajoutée localement.</p>';
+        return;
+    }
+    list.innerHTML = experiences.map((exp, i) => `
+        <div class="admin-article-item">
+            <div class="admin-article-info">
+                <strong>${exp.title}</strong>
+                <p>${exp.description}</p>
+                <small>${exp.organization || ''} ${exp.period ? ' · ' + exp.period : ''}</small>
+            </div>
+            <div class="admin-item-actions">
+                <button type="button" class="btn-edit btn-edit-experience" data-index="${i}" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-remove-article btn-remove-experience" data-index="${i}" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
+    const addExperienceForm = document.getElementById('addExperienceForm');
+    const experienceSubmitBtn = document.getElementById('experienceSubmitBtn');
+    list.querySelectorAll('.btn-edit-experience').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const arr = getLocalExperiences();
+            const exp = arr[index];
+            if (!exp) return;
+            document.getElementById('experienceTitle').value = exp.title || '';
+            document.getElementById('experienceOrganization').value = exp.organization || '';
+            document.getElementById('experienceDescription').value = exp.description || '';
+            document.getElementById('experiencePeriod').value = exp.period || '';
+            document.getElementById('experienceLink').value = exp.link || '';
+            addExperienceForm.dataset.editingIndex = String(index);
+            if (experienceSubmitBtn) experienceSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        });
+    });
+    list.querySelectorAll('.btn-remove-experience').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            if (addExperienceForm && addExperienceForm.dataset.editingIndex === String(index)) {
+                addExperienceForm.reset();
+                addExperienceForm.dataset.editingIndex = '';
+                if (experienceSubmitBtn) experienceSubmitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'expérience';
+            }
+            const arr = getLocalExperiences();
+            arr.splice(index, 1);
+            localStorage.setItem('portfolio-experiences', JSON.stringify(arr));
+            loadExperiences();
+            updateLocalExperiencesList();
+            showToast('Expérience supprimée.', 'info');
         });
     });
 }

@@ -4,21 +4,22 @@
       "home": "Accueil",
       "about": "À propos",
       "skills": "Compétences",
+      "experiences": "Expériences",
       "projects": "Projets",
       "articles": "Articles",
       "cv": "CV",
       "contact": "Contact"
     },
     "hero": {
-      "subtitle": "Développeur Full Stack | Spécialiste Blockchain & Cardano",
-      "bio": "Passionné par le développement web et la blockchain, je crée des solutions innovantes en combinant technologies modernes et expertise en smart contracts Cardano.",
+      "subtitle": "UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Formateur Web3 & Contributeur Communautaire | Rédacteur Technique | Créateur de Contenus Web3 | Reviseur – Project Catalyst Cardano",
+      "bio": "Spécialisé dans l'écosystème Cardano, la formation et la création de contenus Web3.",
       "downloadCv": "Télécharger le CV"
     },
     "about": {
       "title": "À propos de moi",
-      "text1": "Développeur full stack avec une passion pour les technologies émergentes, je me spécialise dans la création d'applications web modernes et de solutions blockchain.",
-      "text2": "Mon parcours m'a conduit à explorer en profondeur l'écosystème Cardano, où j'ai développé des smart contracts, des DApps et créé du contenu éducatif pour la communauté.",
-      "text3": "Je crois en l'apprentissage continu et en la contribution à l'open source. Mon objectif est de créer des solutions qui ont un impact positif et qui tirent parti des dernières innovations technologiques."
+      "text1": "Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano. Mon travail combine les technologies web modernes avec l'innovation blockchain pour créer des expériences numériques intuitives et centrées utilisateur.",
+      "text2": "Au-delà du développement, je contribue activement à la croissance de l'écosystème Cardano et Web3 en RD Congo grâce à la formation, à l'engagement communautaire et à la rédaction technique. J'accompagne l'onboarding des nouveaux membres, crée des contenus éducatifs et aide à faire le lien entre Web2 et Web3.",
+      "text3": "Passionné par la blockchain et l'apprentissage continu, je vise à développer des solutions impactantes tout en renforçant les communautés par la technologie et le partage de connaissances."
     },
     "skills": {
       "title": "Compétences",
@@ -26,6 +27,13 @@
       "backend": "Backend",
       "blockchain": "Blockchain & Cardano",
       "tools": "Outils"
+    },
+    "experiences": {
+      "title": "Expériences",
+      "loading": "Chargement des expériences...",
+      "noExperiences": "Aucune expérience renseignée pour le moment.",
+      "loadMore": "Voir plus",
+      "loadLess": "Voir moins"
     },
     "projects": {
       "title": "Mes Projets",
@@ -38,10 +46,14 @@
       "title": "Articles & Publications",
       "loading": "Chargement des articles...",
       "noArticles": "Aucun article disponible pour le moment.",
-      "readArticle": "Lire l'article"
+      "readArticle": "Lire l'article",
+      "loadMore": "Voir plus",
+      "loadLess": "Voir moins"
     },
     "cv": {
       "title": "Mon CV",
+      "view": "Voir le CV",
+      "hide": "Masquer le CV",
       "download": "Télécharger le CV (PDF)"
     },
     "contact": {
@@ -66,21 +78,22 @@
       "home": "Home",
       "about": "About",
       "skills": "Skills",
+      "experiences": "Experience",
       "projects": "Projects",
       "articles": "Articles",
       "cv": "Resume",
       "contact": "Contact"
     },
     "hero": {
-      "subtitle": "Full Stack Developer | Blockchain & Cardano Specialist",
-      "bio": "Passionate about web development and blockchain, I create innovative solutions by combining modern technologies and expertise in Cardano smart contracts.",
+      "subtitle": "UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Web3 Trainer & Community Contributor | Technical Writer | Web3 Content Creator | Reviewer – Project Catalyst Cardano",
+      "bio": "Specialized in the Cardano ecosystem, training and Web3 content creation.",
       "downloadCv": "Download Resume"
     },
     "about": {
       "title": "About Me",
-      "text1": "Full stack developer with a passion for emerging technologies, I specialize in creating modern web applications and blockchain solutions.",
-      "text2": "My journey has led me to deeply explore the Cardano ecosystem, where I've developed smart contracts, DApps and created educational content for the community.",
-      "text3": "I believe in continuous learning and contributing to open source. My goal is to create solutions that have a positive impact and leverage the latest technological innovations."
+      "text1": "I am a UI/UX Developer and Junior Web3 Developer, specialized in the Cardano blockchain. My work combines modern web technologies with blockchain innovation to create intuitive, user-centered digital experiences.",
+      "text2": "Beyond development, I actively contribute to the growth of the Cardano and Web3 ecosystem in DR Congo through training, community engagement and technical writing. I support onboarding of new members, create educational content and help bridge Web2 and Web3.",
+      "text3": "Passionate about blockchain and continuous learning, I aim to develop impactful solutions while strengthening communities through technology and knowledge sharing."
     },
     "skills": {
       "title": "Skills",
@@ -88,6 +101,13 @@
       "backend": "Backend",
       "blockchain": "Blockchain & Cardano",
       "tools": "Tools"
+    },
+    "experiences": {
+      "title": "Experience",
+      "loading": "Loading experience...",
+      "noExperiences": "No experience listed yet.",
+      "loadMore": "Load more",
+      "loadLess": "Load less"
     },
     "projects": {
       "title": "My Projects",
@@ -100,10 +120,14 @@
       "title": "Articles & Publications",
       "loading": "Loading articles...",
       "noArticles": "No articles available at the moment.",
-      "readArticle": "Read article"
+      "readArticle": "Read article",
+      "loadMore": "Load more",
+      "loadLess": "Load less"
     },
     "cv": {
       "title": "My Resume",
+      "view": "View resume",
+      "hide": "Hide resume",
       "download": "Download Resume (PDF)"
     },
     "contact": {
