@@ -1,0 +1,39 @@
+[
+  {
+    "title": "Introduction aux Smart Contracts Cardano avec Plutus",
+    "description": "Guide complet pour débuter avec le développement de smart contracts sur Cardano. Découvrez les bases de Plutus, l'architecture des contrats et vos premiers exemples pratiques.",
+    "link": "https://medium.com/@votre-compte/introduction-smart-contracts-cardano-plutus",
+    "date": "2024-01-15"
+  },
+  {
+    "title": "Créer votre première DApp sur Cardano : Guide étape par étape",
+    "description": "Tutoriel détaillé pour créer une application décentralisée complète sur la blockchain Cardano. De la configuration de l'environnement à la déploiement en production.",
+    "link": "https://dev.to/votre-compte/creer-premiere-dapp-cardano",
+    "date": "2024-02-20"
+  },
+  {
+    "title": "Optimisation des Smart Contracts Plutus : Meilleures Pratiques",
+    "description": "Découvrez les techniques d'optimisation pour réduire les coûts d'exécution et améliorer les performances de vos smart contracts Plutus sur Cardano.",
+    "link": "https://your-blog.com/optimisation-smart-contracts-plutus",
+    "date": "2024-03-10"
+  },
+  {
+    "title": "Comparaison des Frameworks Frontend Modernes : React vs Vue vs Angular",
+    "description": "Analyse approfondie des trois frameworks JavaScript les plus populaires. Avantages, inconvénients et cas d'usage pour vous aider à choisir le bon outil.",
+    "link": "https://tech-blog.com/comparaison-frameworks-frontend",
+    "date": "2024-04-05"
+  },
+  {
+    "title": "Sécurité dans le Développement Blockchain : Guide Complet",
+    "description": "Les principes essentiels de sécurité à appliquer lors du développement d'applications blockchain. Audit de code, tests et bonnes pratiques.",
+    "link": "https://security-blog.com/securite-blockchain-guide",
+    "date": "2024-05-12"
+  },
+  {
+    "title": "Intégration de Wallets Cardano dans vos Applications Web",
+    "description": "Comment intégrer Nami, Eternl et autres wallets Cardano dans vos applications web. Exemples de code et bonnes pratiques pour une expérience utilisateur optimale.",
+    "link": "https://cardano-dev.com/integration-wallets-cardano",
+    "date": "2024-06-18"
+  }
+]
+

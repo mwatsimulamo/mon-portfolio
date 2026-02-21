@@ -1,0 +1,127 @@
+{
+  "fr": {
+    "nav": {
+      "home": "Accueil",
+      "about": "À propos",
+      "skills": "Compétences",
+      "projects": "Projets",
+      "articles": "Articles",
+      "cv": "CV",
+      "contact": "Contact"
+    },
+    "hero": {
+      "subtitle": "Développeur Full Stack | Spécialiste Blockchain & Cardano",
+      "bio": "Passionné par le développement web et la blockchain, je crée des solutions innovantes en combinant technologies modernes et expertise en smart contracts Cardano.",
+      "downloadCv": "Télécharger le CV"
+    },
+    "about": {
+      "title": "À propos de moi",
+      "text1": "Développeur full stack avec une passion pour les technologies émergentes, je me spécialise dans la création d'applications web modernes et de solutions blockchain.",
+      "text2": "Mon parcours m'a conduit à explorer en profondeur l'écosystème Cardano, où j'ai développé des smart contracts, des DApps et créé du contenu éducatif pour la communauté.",
+      "text3": "Je crois en l'apprentissage continu et en la contribution à l'open source. Mon objectif est de créer des solutions qui ont un impact positif et qui tirent parti des dernières innovations technologiques."
+    },
+    "skills": {
+      "title": "Compétences",
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "blockchain": "Blockchain & Cardano",
+      "tools": "Outils"
+    },
+    "projects": {
+      "title": "Mes Projets",
+      "loading": "Chargement des projets...",
+      "noProjects": "Aucun projet disponible pour le moment.",
+      "viewCode": "Code",
+      "viewDemo": "Démo"
+    },
+    "articles": {
+      "title": "Articles & Publications",
+      "loading": "Chargement des articles...",
+      "noArticles": "Aucun article disponible pour le moment.",
+      "readArticle": "Lire l'article"
+    },
+    "cv": {
+      "title": "Mon CV",
+      "download": "Télécharger le CV (PDF)"
+    },
+    "contact": {
+      "title": "Contactez-moi",
+      "social": "Réseaux sociaux",
+      "form": "Formulaire de contact",
+      "name": "Nom",
+      "email": "Email",
+      "subject": "Sujet",
+      "message": "Message",
+      "send": "Envoyer",
+      "sent": "Message envoyé !"
+    },
+    "footer": {
+      "rights": "Tous droits réservés.",
+      "developed": "Développé avec",
+      "and": "et passion"
+    }
+  },
+  "en": {
+    "nav": {
+      "home": "Home",
+      "about": "About",
+      "skills": "Skills",
+      "projects": "Projects",
+      "articles": "Articles",
+      "cv": "Resume",
+      "contact": "Contact"
+    },
+    "hero": {
+      "subtitle": "Full Stack Developer | Blockchain & Cardano Specialist",
+      "bio": "Passionate about web development and blockchain, I create innovative solutions by combining modern technologies and expertise in Cardano smart contracts.",
+      "downloadCv": "Download Resume"
+    },
+    "about": {
+      "title": "About Me",
+      "text1": "Full stack developer with a passion for emerging technologies, I specialize in creating modern web applications and blockchain solutions.",
+      "text2": "My journey has led me to deeply explore the Cardano ecosystem, where I've developed smart contracts, DApps and created educational content for the community.",
+      "text3": "I believe in continuous learning and contributing to open source. My goal is to create solutions that have a positive impact and leverage the latest technological innovations."
+    },
+    "skills": {
+      "title": "Skills",
+      "frontend": "Frontend",
+      "backend": "Backend",
+      "blockchain": "Blockchain & Cardano",
+      "tools": "Tools"
+    },
+    "projects": {
+      "title": "My Projects",
+      "loading": "Loading projects...",
+      "noProjects": "No projects available at the moment.",
+      "viewCode": "Code",
+      "viewDemo": "Demo"
+    },
+    "articles": {
+      "title": "Articles & Publications",
+      "loading": "Loading articles...",
+      "noArticles": "No articles available at the moment.",
+      "readArticle": "Read article"
+    },
+    "cv": {
+      "title": "My Resume",
+      "download": "Download Resume (PDF)"
+    },
+    "contact": {
+      "title": "Contact Me",
+      "social": "Social Networks",
+      "form": "Contact Form",
+      "name": "Name",
+      "email": "Email",
+      "subject": "Subject",
+      "message": "Message",
+      "send": "Send",
+      "sent": "Message sent!"
+    },
+    "footer": {
+      "rights": "All rights reserved.",
+      "developed": "Developed with",
+      "and": "and passion"
+    }
+  }
+}
+

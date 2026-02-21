@@ -1,0 +1,23 @@
+╔══════════════════════════════════════════════════════════════╗
+║         📸 OÙ METTRE VOTRE PHOTO DE PROFIL                    ║
+╚══════════════════════════════════════════════════════════════╝
+
+📍 CHEMIN EXACT :
+   assets/images/profile.jpg
+
+📁 STRUCTURE :
+   mon-portfolio/
+   └── assets/
+       └── images/
+           └── profile.jpg  ← VOTRE PHOTO ICI
+
+✅ INSTRUCTIONS RAPIDES :
+   1. Préparez votre photo (format JPG, carré 400x400px recommandé)
+   2. Renommez-la en "profile.jpg" (tout en minuscules)
+   3. Placez-la dans le dossier : assets/images/
+   4. Le chemin complet doit être : assets/images/profile.jpg
+
+💡 Si vous n'avez pas de photo, un placeholder élégant s'affichera automatiquement !
+
+📖 Pour plus de détails, consultez le fichier : INSTRUCTIONS_IMAGE.md
+

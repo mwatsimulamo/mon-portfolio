@@ -1,0 +1,57 @@
+[
+  {
+    "title": "DApp Cardano - Marketplace NFT",
+    "description": "Application décentralisée permettant la création et la vente de NFTs sur la blockchain Cardano. Implémentation de smart contracts Plutus pour la gestion des transactions sécurisées.",
+    "image": "assets/images/projects/cardano-nft-marketplace.jpg",
+    "technologies": ["Plutus", "React", "Cardano CLI", "TypeScript", "Node.js"],
+    "github": "https://github.com/votre-compte/cardano-nft-marketplace",
+    "demo": "https://votre-demo.com",
+    "cardano": true
+  },
+  {
+    "title": "Plateforme de Voting Décentralisée",
+    "description": "Système de vote transparent et sécurisé utilisant des smart contracts Cardano. Permet aux organisations de mener des élections décentralisées avec traçabilité complète.",
+    "image": "assets/images/projects/voting-platform.jpg",
+    "technologies": ["Plutus", "Vue.js", "Cardano", "Python", "PostgreSQL"],
+    "github": "https://github.com/votre-compte/voting-platform",
+    "demo": "https://votre-demo-voting.com",
+    "cardano": true
+  },
+  {
+    "title": "Application E-Commerce Moderne",
+    "description": "Plateforme e-commerce complète avec gestion de panier, paiements, et tableau de bord administrateur. Interface utilisateur moderne et responsive.",
+    "image": "assets/images/projects/ecommerce.jpg",
+    "technologies": ["React", "Node.js", "MongoDB", "Stripe API", "Express"],
+    "github": "https://github.com/votre-compte/ecommerce-app",
+    "demo": "https://votre-ecommerce.com",
+    "cardano": false
+  },
+  {
+    "title": "Dashboard Analytics en Temps Réel",
+    "description": "Tableau de bord interactif pour visualiser des données en temps réel. Intégration avec plusieurs APIs et graphiques dynamiques.",
+    "image": "assets/images/projects/analytics-dashboard.jpg",
+    "technologies": ["Angular", "D3.js", "WebSocket", "Firebase", "TypeScript"],
+    "github": "https://github.com/votre-compte/analytics-dashboard",
+    "demo": "https://votre-dashboard.com",
+    "cardano": false
+  },
+  {
+    "title": "Tutoriel Interactif Cardano",
+    "description": "Plateforme éducative pour apprendre à développer des smart contracts sur Cardano. Inclut des exemples pratiques, des exercices et des démos interactives.",
+    "image": "assets/images/projects/cardano-tutorial.jpg",
+    "technologies": ["Next.js", "Markdown", "Cardano", "Plutus", "Tailwind CSS"],
+    "github": "https://github.com/votre-compte/cardano-tutorial",
+    "demo": "https://votre-tutorial-cardano.com",
+    "cardano": true
+  },
+  {
+    "title": "API REST pour Gestion de Projets",
+    "description": "API RESTful complète avec authentification JWT, gestion des utilisateurs et des projets. Documentation Swagger incluse.",
+    "image": "assets/images/projects/api-rest.jpg",
+    "technologies": ["Node.js", "Express", "PostgreSQL", "JWT", "Swagger"],
+    "github": "https://github.com/votre-compte/project-api",
+    "demo": null,
+    "cardano": false
+  }
+]
+

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="fr" id="htmlLang">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Portfolio professionnel - Développeur Full Stack spécialisé en Blockchain et Cardano">
+    <title>Mon Portfolio Professionnel</title>
+    
+    <!-- Font Awesome pour les icônes -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Styles personnalisés -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <a href="#accueil">Mon Portfolio</a>
+            </div>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#accueil" class="nav-link" data-i18n="nav.home">Accueil</a></li>
+                <li><a href="#apropos" class="nav-link" data-i18n="nav.about">À propos</a></li>
+                <li><a href="#competences" class="nav-link" data-i18n="nav.skills">Compétences</a></li>
+                <li><a href="#projets" class="nav-link" data-i18n="nav.projects">Projets</a></li>
+                <li><a href="#articles" class="nav-link" data-i18n="nav.articles">Articles</a></li>
+                <li><a href="#cv" class="nav-link" data-i18n="nav.cv">CV</a></li>
+                <li><a href="#contact" class="nav-link" data-i18n="nav.contact">Contact</a></li>
+            </ul>
+            <div class="language-selector">
+                <button class="lang-btn" id="langBtn" title="Changer la langue">
+                    <i class="fas fa-globe"></i>
+                    <span id="currentLang">FR</span>
+                </button>
+                <div class="lang-dropdown" id="langDropdown">
+                    <button class="lang-option" data-lang="fr">🇫🇷 Français</button>
+                    <button class="lang-option" data-lang="en">🇬🇧 English</button>
+                </div>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Section Accueil -->
+    <section id="accueil" class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">Olivier Mwatsimulamo</h1>
+                <p class="hero-subtitle" data-i18n="hero.subtitle">Développeur Full Stack | Spécialiste Blockchain & Cardano</p>
+                <p class="hero-bio" data-i18n="hero.bio">
+                    Passionné par le développement web et la blockchain, je crée des solutions innovantes 
+                    en combinant technologies modernes et expertise en smart contracts Cardano.
+                </p>
+                <a href="#cv" class="btn btn-primary" data-i18n="hero.downloadCv">
+                    <i class="fas fa-download"></i> Télécharger le CV
+                </a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <i class="fas fa-chevron-down"></i>
+        </div>
+    </section>
+
+    <!-- Section À propos -->
+    <section id="apropos" class="section">
+        <div class="container">
+            <h2 class="section-title" data-i18n="about.title">À propos de moi</h2>
+            <div class="about-content">
+                <div class="about-image">
+                    <img src="assets/images/profile.jpg" alt="Photo de profil" id="profileImage">
+                    <!-- Placeholder si pas d'image -->
+                    <div class="profile-placeholder" id="profilePlaceholder">
+                        <i class="fas fa-user"></i>
+                    </div>
+                </div>
+                <div class="about-text">
+                    <p data-i18n="about.text1">
+                        Développeur full stack avec une passion pour les technologies émergentes, 
+                        je me spécialise dans la création d'applications web modernes et de solutions blockchain.
+                    </p>
+                    <p data-i18n="about.text2">
+                        Mon parcours m'a conduit à explorer en profondeur l'écosystème Cardano, 
+                        où j'ai développé des smart contracts, des DApps et créé du contenu éducatif 
+                        pour la communauté.
+                    </p>
+                    <p data-i18n="about.text3">
+                        Je crois en l'apprentissage continu et en la contribution à l'open source. 
+                        Mon objectif est de créer des solutions qui ont un impact positif et qui 
+                        tirent parti des dernières innovations technologiques.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Compétences -->
+    <section id="competences" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title" data-i18n="skills.title">Compétences</h2>
+            
+            <!-- Frontend -->
+            <div class="skill-category">
+                <h3 class="skill-category-title">
+                    <i class="fas fa-paint-brush"></i> <span data-i18n="skills.frontend">Frontend</span>
+                </h3>
+                <div class="skills-grid">
+                    <div class="skill-item">
+                        <i class="fab fa-react"></i>
+                        <span>React</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-vuejs"></i>
+                        <span>Vue.js</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-angular"></i>
+                        <span>Angular</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-html5"></i>
+                        <span>HTML5</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-css3-alt"></i>
+                        <span>CSS3</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-js"></i>
+                        <span>JavaScript</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-sass"></i>
+                        <span>SASS</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-bootstrap"></i>
+                        <span>Bootstrap</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Backend -->
+            <div class="skill-category">
+                <h3 class="skill-category-title">
+                    <i class="fas fa-server"></i> <span data-i18n="skills.backend">Backend</span>
+                </h3>
+                <div class="skills-grid">
+                    <div class="skill-item">
+                        <i class="fab fa-node-js"></i>
+                        <span>Node.js</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-python"></i>
+                        <span>Python</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-database"></i>
+                        <span>PostgreSQL</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-database"></i>
+                        <span>MongoDB</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-php"></i>
+                        <span>PHP</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-fire"></i>
+                        <span>Firebase</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blockchain / Cardano -->
+            <div class="skill-category cardano-highlight">
+                <h3 class="skill-category-title">
+                    <i class="fas fa-coins"></i> <span data-i18n="skills.blockchain">Blockchain & Cardano</span>
+                </h3>
+                <div class="skills-grid">
+                    <div class="skill-item">
+                        <i class="fas fa-link"></i>
+                        <span>Plutus</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-code"></i>
+                        <span>Smart Contracts</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>DApps</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-wallet"></i>
+                        <span>Cardano Wallets</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-network-wired"></i>
+                        <span>Cardano CLI</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-book"></i>
+                        <span>Tutoriels Cardano</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Outils -->
+            <div class="skill-category">
+                <h3 class="skill-category-title">
+                    <i class="fas fa-tools"></i> <span data-i18n="skills.tools">Outils</span>
+                </h3>
+                <div class="skills-grid">
+                    <div class="skill-item">
+                        <i class="fab fa-git-alt"></i>
+                        <span>Git</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-docker"></i>
+                        <span>Docker</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-figma"></i>
+                        <span>Figma</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fas fa-terminal"></i>
+                        <span>Linux</span>
+                    </div>
+                    <div class="skill-item">
+                        <i class="fab fa-aws"></i>
+                        <span>AWS</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Projets -->
+    <section id="projets" class="section">
+        <div class="container">
+            <h2 class="section-title" data-i18n="projects.title">Mes Projets</h2>
+            <div class="projects-grid" id="projectsGrid">
+                <!-- Les projets seront chargés dynamiquement depuis projects.json -->
+                <div class="loading" data-i18n="projects.loading">Chargement des projets...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Articles -->
+    <section id="articles" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title" data-i18n="articles.title">Articles & Publications</h2>
+            <div class="articles-list" id="articlesList">
+                <!-- Les articles seront chargés dynamiquement depuis articles.json -->
+                <div class="loading" data-i18n="articles.loading">Chargement des articles...</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section CV -->
+    <section id="cv" class="section">
+        <div class="container">
+            <h2 class="section-title" data-i18n="cv.title">Mon CV</h2>
+            <div class="cv-content">
+                <div class="cv-preview">
+                    <iframe id="cvPreview" src="" frameborder="0"></iframe>
+                </div>
+                <div class="cv-actions">
+                    <a href="assets/cv/CV%20Olivier.pdf" class="btn btn-primary" download="CV Olivier.pdf" id="downloadCvBtn" data-i18n="cv.download">
+                        <i class="fas fa-download"></i> Télécharger le CV (PDF)
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Contact -->
+    <section id="contact" class="section section-alt">
+        <div class="container">
+            <h2 class="section-title" data-i18n="contact.title">Contactez-moi</h2>
+            <div class="contact-content">
+                <div class="contact-info">
+                    <h3 data-i18n="contact.social">Réseaux sociaux</h3>
+                    <div class="social-links">
+                        <a href="mailto:votre.email@example.com" class="social-link" target="_blank" rel="noopener">
+                            <i class="fas fa-envelope"></i>
+                            <span>Email</span>
+                        </a>
+                        <a href="https://linkedin.com/in/votre-profil" class="social-link" target="_blank" rel="noopener">
+                            <i class="fab fa-linkedin"></i>
+                            <span>LinkedIn</span>
+                        </a>
+                        <a href="https://twitter.com/votre-compte" class="social-link" target="_blank" rel="noopener">
+                            <i class="fab fa-twitter"></i>
+                            <span>Twitter/X</span>
+                        </a>
+                        <a href="https://github.com/votre-compte" class="social-link" target="_blank" rel="noopener">
+                            <i class="fab fa-github"></i>
+                            <span>GitHub</span>
+                        </a>
+                    </div>
+                </div>
+                <div class="contact-form-container">
+                    <h3 data-i18n="contact.form">Formulaire de contact</h3>
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="name" data-i18n="contact.name">Nom</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email" data-i18n="contact.email">Email</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject" data-i18n="contact.subject">Sujet</label>
+                            <input type="text" id="subject" name="subject" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="message" data-i18n="contact.message">Message</label>
+                            <textarea id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary" data-i18n="contact.send">
+                            <i class="fas fa-paper-plane"></i> Envoyer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 Mon Portfolio. <span data-i18n="footer.rights">Tous droits réservés.</span></p>
+            <p class="footer-note"><span data-i18n="footer.developed">Développé avec</span> <i class="fas fa-heart"></i> <span data-i18n="footer.and">et passion</span></p>
+        </div>
+    </footer>
+
+    <!-- Script JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
+

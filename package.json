@@ -1,0 +1,21 @@
+{
+  "name": "mon-portfolio",
+  "version": "1.0.0",
+  "description": "Portfolio professionnel moderne et responsive",
+  "main": "index.html",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "portfolio",
+    "html",
+    "css",
+    "javascript",
+    "cardano",
+    "blockchain"
+  ],
+  "author": "Votre Nom",
+  "license": "MIT"
+}
+

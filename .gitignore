@@ -1,0 +1,36 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Fichiers temporaires
+*.log
+*.tmp
+*.temp
+
+# Fichiers sensibles (à ne jamais commiter)
+.env
+.env.local
+*.key
+*.pem
+
+# Dossiers de build (si vous ajoutez un build process plus tard)
+dist/
+build/
+node_modules/
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+
+# Fichiers personnels (optionnel - décommentez si nécessaire)
+# assets/images/profile.jpg
+# assets/cv/cv.pdf
+
