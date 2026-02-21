@@ -564,20 +564,33 @@ body {
 }
 
 .project-card:hover {
-    transform: translateY(-8px);
+    transform: translateY(-6px);
     box-shadow: var(--shadow-xl);
+}
+
+.project-card .project-image-wrap {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background-color: var(--bg-secondary);
 }
 
 .project-image {
     width: 100%;
-    height: 200px;
+    height: 100%;
     object-fit: cover;
-    background-color: var(--bg-secondary);
+    object-position: center;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.project-card:hover .project-image {
+    transform: scale(1.03);
 }
 
 .project-image-placeholder {
     width: 100%;
-    height: 200px;
+    aspect-ratio: 16 / 10;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     display: flex;
     align-items: center;
@@ -600,15 +613,58 @@ body {
     color: var(--text-primary);
 }
 
+.project-description-wrap {
+    margin-bottom: var(--spacing-sm);
+    flex-grow: 1;
+    min-height: 0;
+}
+
 .project-description {
     color: var(--text-secondary);
-    margin-bottom: var(--spacing-md);
-    flex-grow: 1;
-    line-height: 1.6;
+    line-height: 1.65;
+    font-size: 0.95rem;
+    text-align: justify;
+    letter-spacing: 0.01em;
 }
 
 .project-description.description-block {
     min-height: 0;
+}
+
+.project-description.project-description--collapsed {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.project-description-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 0;
+    background: none;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--primary-color);
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.project-description-toggle:hover {
+    color: var(--secondary-color);
+    text-decoration: underline;
+}
+
+.project-description-toggle i {
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
+}
+
+.project-description-toggle.expanded i {
+    transform: rotate(180deg);
 }
 
 .project-tech {
@@ -1132,7 +1188,7 @@ body {
     height: 3px;
     background: currentColor;
     opacity: 0.35;
-    animation: toastProgress 4s linear forwards;
+    animation: toastProgress var(--toast-duration, 2.5s) linear forwards;
 }
 
 .toast.toast--success {
@@ -1191,6 +1247,101 @@ body {
 @keyframes toastProgress {
     from { width: 100%; }
     to { width: 0%; }
+}
+
+/* ============================================
+   MODAL ADMIN MOT DE PASSE (premium)
+   ============================================ */
+.admin-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    padding: var(--spacing-md);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.admin-modal-overlay.admin-modal--open {
+    opacity: 1;
+    visibility: visible;
+}
+
+.admin-modal {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius-lg);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    padding: var(--spacing-lg);
+    max-width: 380px;
+    width: 100%;
+    transform: scale(0.95) translateY(10px);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.admin-modal-overlay.admin-modal--open .admin-modal {
+    transform: scale(1) translateY(0);
+}
+
+.admin-modal-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.admin-modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.admin-modal-subtitle {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-md);
+    line-height: 1.45;
+}
+
+.admin-modal input[type="password"] {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color, rgba(0,0,0,0.1));
+    border-radius: var(--border-radius);
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-modal input[type="password"]:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.admin-modal-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+}
+
+.admin-modal-actions .btn {
+    padding: 10px 20px;
+    font-weight: 500;
 }
 
 /* ============================================

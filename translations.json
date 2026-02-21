@@ -40,7 +40,9 @@
       "loading": "Chargement des projets...",
       "noProjects": "Aucun projet disponible pour le moment.",
       "viewCode": "Code",
-      "viewDemo": "Démo"
+      "viewDemo": "Démo",
+      "loadMore": "Charger plus",
+      "loadLess": "Charger moins"
     },
     "articles": {
       "title": "Articles & Publications",
@@ -114,7 +116,9 @@
       "loading": "Loading projects...",
       "noProjects": "No projects available at the moment.",
       "viewCode": "Code",
-      "viewDemo": "Demo"
+      "viewDemo": "Demo",
+      "loadMore": "Load more",
+      "loadLess": "Load less"
     },
     "articles": {
       "title": "Articles & Publications",

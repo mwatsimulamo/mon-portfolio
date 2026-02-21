@@ -464,6 +464,22 @@
     <!-- Conteneur des toasts -->
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
+    <!-- Modal mot de passe admin (premium) -->
+    <div class="admin-modal-overlay" id="adminModalOverlay" aria-hidden="true" role="dialog" aria-labelledby="adminModalTitle" aria-modal="true">
+        <div class="admin-modal" id="adminModal">
+            <div class="admin-modal-icon"><i class="fas fa-lock"></i></div>
+            <h2 class="admin-modal-title" id="adminModalTitle">Accès administration</h2>
+            <p class="admin-modal-subtitle">Entrez votre mot de passe pour gérer les articles, projets et expériences.</p>
+            <form id="adminModalForm" autocomplete="off">
+                <input type="password" id="adminModalPassword" placeholder="Mot de passe" autocomplete="off" aria-label="Mot de passe">
+                <div class="admin-modal-actions">
+                    <button type="button" class="btn btn-secondary" id="adminModalCancel">Annuler</button>
+                    <button type="submit" class="btn btn-primary" id="adminModalSubmit"><i class="fas fa-sign-in-alt"></i> Accéder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="container">

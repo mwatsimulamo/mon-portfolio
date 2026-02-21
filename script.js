@@ -39,11 +39,12 @@ const INITIAL_DISPLAY_COUNT = 3;
  * @param {string} type - 'success' | 'info'
  * @param {number} duration - Durée en ms avant disparition (défaut: 4000)
  */
-function showToast(message, type = 'success', duration = 4000) {
+function showToast(message, type = 'success', duration = 2500) {
     const container = document.getElementById('toastContainer');
     if (!container) return;
     const toast = document.createElement('div');
     toast.className = `toast toast--${type}`;
+    toast.style.setProperty('--toast-duration', (duration / 1000) + 's');
     const icon = type === 'success' ? 'fa-check-circle' : 'fa-info-circle';
     toast.innerHTML = `
         <i class="fas ${icon} toast-icon" aria-hidden="true"></i>
@@ -185,6 +186,57 @@ function scrollToSection(sectionId) {
 // ============================================
 
 /**
+ * Affiche la modal premium de saisie du mot de passe admin et renvoie une Promise avec la valeur saisie ou null si annulé.
+ */
+function showAdminPasswordModal() {
+    const overlay = document.getElementById('adminModalOverlay');
+    const form = document.getElementById('adminModalForm');
+    const input = document.getElementById('adminModalPassword');
+    const cancelBtn = document.getElementById('adminModalCancel');
+    if (!overlay || !form || !input) return Promise.resolve(null);
+
+    return new Promise(function(resolve) {
+        var settled = false;
+        function closeModal() {
+            overlay.classList.remove('admin-modal--open');
+            overlay.setAttribute('aria-hidden', 'true');
+            input.value = '';
+        }
+        function done(value) {
+            if (settled) return;
+            settled = true;
+            closeModal();
+            form.removeEventListener('submit', onSubmit);
+            cancelBtn.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onOverlayClick);
+            document.removeEventListener('keydown', onEscape);
+            resolve(value);
+        }
+
+        function onSubmit(e) {
+            e.preventDefault();
+            done(input.value.trim());
+        }
+        function onCancel() { done(null); }
+        function onOverlayClick(e) {
+            if (e.target === overlay) done(null);
+        }
+        function onEscape(e) {
+            if (e.key === 'Escape') done(null);
+        }
+
+        form.addEventListener('submit', onSubmit);
+        cancelBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onOverlayClick);
+        document.addEventListener('keydown', onEscape);
+
+        overlay.classList.add('admin-modal--open');
+        overlay.setAttribute('aria-hidden', 'false');
+        input.focus();
+    });
+}
+
+/**
  * Affiche ou masque l'interface d'administration selon la session
  */
 function setAdminUIVisibility(isAdmin) {
@@ -211,14 +263,15 @@ function initAdminGate() {
     if (unlockTrigger) {
         unlockTrigger.addEventListener('click', function(e) {
             e.preventDefault();
-            const password = prompt('Mot de passe administration :');
-            if (password === ADMIN_PASSWORD) {
-                localStorage.setItem(ADMIN_STORAGE_KEY, '1');
-                setAdminUIVisibility(true);
-                showToast('Mode admin activé.', 'success');
-            } else if (password !== null) {
-                showToast('Mot de passe incorrect.', 'info');
-            }
+            showAdminPasswordModal().then(function(password) {
+                if (password === ADMIN_PASSWORD) {
+                    localStorage.setItem(ADMIN_STORAGE_KEY, '1');
+                    setAdminUIVisibility(true);
+                    showToast('Mode admin activé.', 'success');
+                } else if (password !== null) {
+                    showToast('Mot de passe incorrect.', 'info');
+                }
+            });
         });
     }
 
@@ -463,33 +516,34 @@ function exportProjects() {
  * @param {Object} project - Données du projet
  * @returns {HTMLElement} - Élément HTML de la carte projet
  */
+const PROJECT_DESCRIPTION_COLLAPSE_CHARS = 200;
+
 function createProjectCard(project) {
     const card = document.createElement('div');
     card.className = 'project-card';
     
-    // Image du projet
-    let imageHTML = '';
+    const loadMoreText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.loadMore) ? translations[currentLang].projects.loadMore : 'Charger plus';
+    const loadLessText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.loadLess) ? translations[currentLang].projects.loadLess : 'Charger moins';
+
+    let imageHTML = '<div class="project-image-wrap">';
     if (project.image) {
-        imageHTML = `<img src="${project.image}" alt="${project.title}" class="project-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+        imageHTML += `<img src="${project.image}" alt="${project.title}" class="project-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
     }
     imageHTML += `
         <div class="project-image-placeholder" style="display: ${project.image ? 'none' : 'flex'};">
             <i class="fas fa-code"></i>
         </div>
-    `;
+    </div>`;
     
-    // Technologies utilisées
     const technologies = Array.isArray(project.technologies) ? project.technologies : [];
     const techTags = technologies
         .map(tech => `<span class="tech-tag">${tech}</span>`)
         .join('');
     
-    // Badge Cardano si applicable
     const cardanoBadge = project.cardano 
         ? '<span class="cardano-badge"><i class="fas fa-coins"></i> Cardano</span>' 
         : '';
     
-    // Liens (GitHub et démo)
     const codeText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.viewCode) 
         ? translations[currentLang].projects.viewCode 
         : 'Code';
@@ -513,6 +567,18 @@ function createProjectCard(project) {
     }
     
     const descriptionHtml = formatDescriptionAsParagraphs(project.description);
+    const isLongDescription = (project.description || '').length > PROJECT_DESCRIPTION_COLLAPSE_CHARS;
+    const descriptionWrapHTML = isLongDescription
+        ? `<div class="project-description-wrap">
+            <div class="project-description description-block project-description--collapsed">${descriptionHtml}</div>
+            <button type="button" class="project-description-toggle" aria-expanded="false">
+                <i class="fas fa-chevron-down"></i> <span class="project-description-toggle-text">${loadMoreText}</span>
+            </button>
+           </div>`
+        : `<div class="project-description-wrap">
+            <div class="project-description description-block">${descriptionHtml}</div>
+           </div>`;
+
     card.innerHTML = `
         ${imageHTML}
         <div class="project-content">
@@ -520,11 +586,25 @@ function createProjectCard(project) {
                 ${project.title}
                 ${cardanoBadge}
             </h3>
-            <div class="project-description description-block">${descriptionHtml}</div>
+            ${descriptionWrapHTML}
             <div class="project-tech">${techTags}</div>
             <div class="project-links">${linksHTML}</div>
         </div>
     `;
+
+    if (isLongDescription) {
+        const descEl = card.querySelector('.project-description');
+        const btn = card.querySelector('.project-description-toggle');
+        const toggleText = card.querySelector('.project-description-toggle-text');
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            const expanded = descEl.classList.toggle('project-description--collapsed');
+            btn.classList.toggle('expanded', !expanded);
+            btn.setAttribute('aria-expanded', !expanded);
+            toggleText.textContent = expanded ? loadMoreText : loadLessText;
+        });
+    }
     
     return card;
 }

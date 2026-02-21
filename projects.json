@@ -1,0 +1,11 @@
+[
+  {
+    "title": "Wenze",
+    "description": "Trusted marketplace for Goma (DRC) enabling online buying and selling of products. Payments in ADA are secured via a Cardano smart contract escrow until confirmed by the buyer. Features include user authentication, integrated messaging, and a WZP points system. Deployed on the Preprod Testnet.",
+    "image": "assets/images/projects/wenze.png",
+    "technologies": ["React", "TypeScript", "Vite", "TailwindCSS", "Cardano", "Lucid", "Aiken", "Supabase", "Blockfrost"],
+    "github": "https://github.com/mwatsimulamo/wenze",
+    "demo": "https://wenze-beta.vercel.app/",
+    "cardano": true
+  }
+]
