@@ -1,39 +1,39 @@
 {
   "frontend": [
-    { "name": "JavaScript", "icon": "fab fa-js", "level": 88, "link": "https://developer.mozilla.org/en-US/docs/Web/JavaScript" },
-    { "name": "TypeScript", "icon": "fab fa-js", "level": 85, "link": "https://www.typescriptlang.org/" },
-    { "name": "React", "icon": "fab fa-react", "level": 85, "link": "https://react.dev/" },
-    { "name": "Next.js", "icon": "fas fa-code", "level": 78, "link": "https://nextjs.org/" },
+    { "name": "JavaScript", "icon": "fab fa-js", "level": 60, "link": "https://developer.mozilla.org/en-US/docs/Web/JavaScript" },
+    { "name": "TypeScript", "icon": "fab fa-js", "level": 35, "link": "https://www.typescriptlang.org/" },
+    { "name": "React", "icon": "fab fa-react", "level": 65, "link": "https://react.dev/" },
+    { "name": "Next.js", "icon": "fas fa-code", "level": 75, "link": "https://nextjs.org/" },
     { "name": "TailwindCSS", "icon": "fas fa-palette", "level": 82, "link": "https://tailwindcss.com/" },
-    { "name": "HTML", "icon": "fab fa-html5", "level": 95, "link": "https://developer.mozilla.org/en-US/docs/Web/HTML" },
-    { "name": "CSS", "icon": "fab fa-css3-alt", "level": 90, "link": "https://developer.mozilla.org/en-US/docs/Web/CSS" }
+    { "name": "HTML", "icon": "fab fa-html5", "level": 85, "link": "https://developer.mozilla.org/en-US/docs/Web/HTML" },
+    { "name": "CSS", "icon": "fab fa-css3-alt", "level": 80, "link": "https://developer.mozilla.org/en-US/docs/Web/CSS" }
   ],
   "backend": [
-    { "name": "Node.js", "icon": "fab fa-node-js", "level": 82, "link": "https://nodejs.org/" },
-    { "name": "NestJS", "icon": "fas fa-server", "level": 75, "link": "https://nestjs.com/" },
-    { "name": "PostgreSQL", "icon": "fas fa-database", "level": 80, "link": "https://www.postgresql.org/" },
+    { "name": "Node.js", "icon": "fab fa-node-js", "level": 65, "link": "https://nodejs.org/" },
+    { "name": "NestJS", "icon": "fas fa-server", "level": 50, "link": "https://nestjs.com/" },
+    { "name": "PostgreSQL", "icon": "fas fa-database", "level": 35, "link": "https://www.postgresql.org/" },
     { "name": "Supabase", "icon": "fas fa-database", "level": 85, "link": "https://supabase.com/" }
   ],
   "blockchain": [
-    { "name": "Haskell", "icon": "fas fa-code", "level": 85, "link": "https://www.haskell.org/" },
-    { "name": "Plutus", "icon": "fas fa-link", "level": 88, "link": "https://plutus.readthedocs.io/" },
-    { "name": "Aiken", "icon": "fas fa-link", "level": 80, "link": "https://aiken-lang.org/" },
-    { "name": "Lucid", "icon": "fas fa-wallet", "level": 82, "link": "https://lucid.space/" },
-    { "name": "Mesh SDK", "icon": "fas fa-cube", "level": 78, "link": "https://meshjs.dev/" },
-    { "name": "Blockfrost", "icon": "fas fa-cube", "level": 88, "link": "https://blockfrost.io/" },
-    { "name": "Marlowe", "icon": "fas fa-file-contract", "level": 75, "link": "https://marlowe.iohk.io/" },
-    { "name": "Project Catalyst", "icon": "fas fa-network-wired", "level": 85, "link": "https://projectcatalyst.io/" },
-    { "name": "Cardano & Polkadot Wallets", "icon": "fas fa-wallet", "level": 90, "link": "https://cardano.org/ecosystem/wallets" }
+    { "name": "Haskell", "icon": "fas fa-code", "level": 55, "link": "https://www.haskell.org/" },
+    { "name": "Plutus", "icon": "fas fa-link", "level": 35, "link": "https://plutus.readthedocs.io/" },
+    { "name": "Aiken", "icon": "fas fa-link", "level": 60, "link": "https://aiken-lang.org/" },
+    { "name": "Lucid", "icon": "fas fa-wallet", "level": 60, "link": "https://lucid.space/" },
+    { "name": "Mesh SDK", "icon": "fas fa-cube", "level": 35, "link": "https://meshjs.dev/" },
+    { "name": "Blockfrost", "icon": "fas fa-cube", "level": 75, "link": "https://blockfrost.io/" },
+    { "name": "Marlowe", "icon": "fas fa-file-contract", "level": 60, "link": "https://marlowe.iohk.io/" },
+    { "name": "Project Catalyst", "icon": "fas fa-network-wired", "level": 98, "link": "https://projectcatalyst.io/" },
+    { "name": "Cardano Wallets", "icon": "fas fa-wallet", "level": 97, "link": "https://devex.intersectmbo.org/docs/working-group/q1-2026/sessions/10-wallet-integration/session-resources" }
   ],
   "tools": [
-    { "name": "Obsidian", "icon": "fas fa-book", "level": 85, "link": "https://obsidian.md/" },
+    { "name": "Obsidian", "icon": "fas fa-book", "level": 95, "link": "https://obsidian.md/" },
     { "name": "Demeter.run", "icon": "fas fa-cloud", "level": 78, "link": "https://demeter.run/" },
-    { "name": "Canva", "icon": "fas fa-palette", "level": 82, "link": "https://www.canva.com/" },
-    { "name": "Marlowe Playground", "icon": "fas fa-play", "level": 75, "link": "https://play.marlowe.iohk.io/" },
+    { "name": "Canva", "icon": "fas fa-palette", "level": 90, "link": "https://www.canva.com/" },
+    { "name": "Marlowe Playground", "icon": "fas fa-play", "level": 95, "link": "https://play.marlowe.iohk.io/" },
     { "name": "Mentimeter", "icon": "fas fa-poll", "level": 80, "link": "https://www.mentimeter.com/" },
     { "name": "Git", "icon": "fab fa-git-alt", "level": 90, "link": "https://git-scm.com/" },
-    { "name": "Figma", "icon": "fab fa-figma", "level": 70, "link": "https://www.figma.com/" },
-    { "name": "Linux", "icon": "fas fa-terminal", "level": 85, "link": "https://www.linux.org/" }
+    { "name": "Figma", "icon": "fab fa-figma", "level": 40, "link": "https://www.figma.com/" },
+    { "name": "Linux", "icon": "fas fa-terminal", "level": 55, "link": "https://www.linux.org/" }
   ],
   "certifications": [
     { "name": "Polkadot Blockchain Academy (PBA-X)", "icon": "fas fa-award", "level": 100, "link": "https://app.kajabi.com/certificates/57590186", "certification": true },

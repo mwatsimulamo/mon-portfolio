@@ -34,8 +34,8 @@
       "title": "Expériences",
       "loading": "Chargement des expériences...",
       "noExperiences": "Aucune expérience renseignée pour le moment.",
-      "loadMore": "Voir plus",
-      "loadLess": "Voir moins"
+      "previous": "Précédent",
+      "next": "Suivant"
     },
     "projects": {
       "title": "Mes Projets",
@@ -51,8 +51,8 @@
       "loading": "Chargement des articles...",
       "noArticles": "Aucun article disponible pour le moment.",
       "readArticle": "Lire l'article",
-      "loadMore": "Voir plus",
-      "loadLess": "Voir moins"
+      "previous": "Précédent",
+      "next": "Suivant"
     },
     "cv": {
       "title": "Mon CV",
@@ -112,8 +112,8 @@
       "title": "Experience",
       "loading": "Loading experience...",
       "noExperiences": "No experience listed yet.",
-      "loadMore": "Load more",
-      "loadLess": "Load less"
+      "previous": "Previous",
+      "next": "Next"
     },
     "projects": {
       "title": "My Projects",
@@ -129,8 +129,8 @@
       "loading": "Loading articles...",
       "noArticles": "No articles available at the moment.",
       "readArticle": "Read article",
-      "loadMore": "Load more",
-      "loadLess": "Load less"
+      "previous": "Previous",
+      "next": "Next"
     },
     "cv": {
       "title": "My Resume",

@@ -26,8 +26,8 @@ const CONTACT_EMAIL = 'mwatsimulamoolivier@gmail.com';
 /** Formspree : collez uniquement l'ID du formulaire (ex: mjgearjz) ou l'URL complète. */
 const FORMSPREE_FORM_ID = 'mjgearjz';
 
-/** Nombre d'articles et d'expériences affichés avant "Voir plus". */
-const INITIAL_DISPLAY_COUNT = 3;
+/** Nombre d'articles et d'expériences affichés par page (pagination). */
+const ITEMS_PER_PAGE = 5;
 
 // ============================================
 // TOAST NOTIFICATIONS
@@ -614,7 +614,71 @@ function createProjectCard(project) {
 // ============================================
 
 /**
- * Charge les expériences depuis experiences.json et localStorage, puis les affiche
+ * Affiche une page d'expériences et met à jour la pagination
+ */
+function renderExperiencesPage(page) {
+    const listEl = document.getElementById('experiencesList');
+    if (!listEl || !listEl._allData) return;
+    const all = listEl._allData;
+    const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_PAGE));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const slice = all.slice(start, start + ITEMS_PER_PAGE);
+
+    listEl.innerHTML = '';
+    slice.forEach(exp => listEl.appendChild(createExperienceItem(exp)));
+    listEl.dataset.currentPage = String(currentPage);
+
+    const container = listEl.parentNode;
+    let paginationWrap = document.getElementById('experiencesPagination');
+    if (paginationWrap && paginationWrap.parentNode) paginationWrap.parentNode.removeChild(paginationWrap);
+
+    if (totalPages <= 1) return;
+
+    const prevText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.previous) ? translations[currentLang].experiences.previous : 'Précédent';
+    const nextText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.next) ? translations[currentLang].experiences.next : 'Suivant';
+
+    paginationWrap = document.createElement('div');
+    paginationWrap.className = 'pagination-wrap';
+    paginationWrap.id = 'experiencesPagination';
+    const nav = document.createElement('nav');
+    nav.className = 'pagination';
+    nav.setAttribute('aria-label', 'Pagination expériences');
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'pagination-btn pagination-prev';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> ' + prevText;
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => { renderExperiencesPage(currentPage - 1); scrollToSection('experiences'); });
+
+    const pagesContainer = document.createElement('span');
+    pagesContainer.className = 'pagination-pages';
+    for (let p = 1; p <= totalPages; p++) {
+        const bp = document.createElement('button');
+        bp.type = 'button';
+        bp.className = 'pagination-btn pagination-page' + (p === currentPage ? ' active' : '');
+        bp.textContent = p;
+        bp.addEventListener('click', () => { renderExperiencesPage(p); scrollToSection('experiences'); });
+        pagesContainer.appendChild(bp);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'pagination-btn pagination-next';
+    nextBtn.innerHTML = nextText + ' <i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => { renderExperiencesPage(currentPage + 1); scrollToSection('experiences'); });
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(pagesContainer);
+    nav.appendChild(nextBtn);
+    paginationWrap.appendChild(nav);
+    container.appendChild(paginationWrap);
+}
+
+/**
+ * Charge les expériences depuis experiences.json et localStorage, puis affiche la page 1
  */
 async function loadExperiences() {
     const listEl = document.getElementById('experiencesList');
@@ -634,56 +698,11 @@ async function loadExperiences() {
                 ? translations[currentLang].experiences.noExperiences
                 : 'Aucune expérience renseignée pour le moment.';
             listEl.innerHTML = `<p class="loading">${msg}</p>`;
+            listEl._allData = null;
             return;
         }
-        listEl.innerHTML = '';
-        listEl.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
-        const totalExperiences = all.length;
-        all.forEach((exp, index) => {
-            const el = createExperienceItem(exp);
-            if (index >= INITIAL_DISPLAY_COUNT) el.classList.add('item-over-limit');
-            listEl.appendChild(el);
-        });
-        const container = listEl.parentNode;
-        const existingBtn = document.getElementById('experiencesLoadMoreBtn');
-        if (existingBtn && existingBtn.parentNode) existingBtn.parentNode.remove();
-        if (totalExperiences > INITIAL_DISPLAY_COUNT) {
-            const wrap = document.createElement('div');
-            wrap.className = 'load-more-wrap';
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-secondary btn-load-more';
-            btn.id = 'experiencesLoadMoreBtn';
-            const loadMoreText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.loadMore) ? translations[currentLang].experiences.loadMore : 'Voir plus';
-            const loadLessText = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.loadLess) ? translations[currentLang].experiences.loadLess : 'Voir moins';
-            btn.innerHTML = '<i class="fas fa-chevron-down"></i> <span class="btn-load-more-text">' + loadMoreText + '</span>';
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                let v = parseInt(listEl.dataset.visibleCount || '0', 10);
-                const isShowingMore = v < totalExperiences;
-                if (isShowingMore) {
-                    v = Math.min(v + 3, totalExperiences);
-                    listEl.dataset.visibleCount = String(v);
-                    for (let i = 0; i < listEl.children.length; i++) {
-                        listEl.children[i].classList.toggle('item-over-limit', i >= v);
-                    }
-                    btn.querySelector('.btn-load-more-text').textContent = v >= totalExperiences ? loadLessText : loadMoreText;
-                    btn.querySelector('i').className = v >= totalExperiences ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-                } else {
-                    listEl.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
-                    for (let i = 0; i < listEl.children.length; i++) {
-                        listEl.children[i].classList.toggle('item-over-limit', i >= INITIAL_DISPLAY_COUNT);
-                    }
-                    btn.querySelector('.btn-load-more-text').textContent = loadMoreText;
-                    btn.querySelector('i').className = 'fas fa-chevron-down';
-                }
-                const experiencesSection = document.getElementById('experiences');
-                if (experiencesSection) experiencesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-            wrap.appendChild(btn);
-            container.appendChild(wrap);
-        }
+        listEl._allData = all;
+        renderExperiencesPage(1);
     } catch (err) {
         console.error('Erreur chargement expériences:', err);
         listEl.innerHTML = '<p class="loading">Erreur lors du chargement des expériences.</p>';
@@ -762,98 +781,103 @@ function createExperienceItem(exp) {
 // ============================================
 
 /**
- * Charge les articles depuis articles.json et localStorage, puis les affiche
+ * Affiche une page d'articles et met à jour la pagination
+ */
+function renderArticlesPage(page) {
+    const listEl = document.getElementById('articlesList');
+    if (!listEl || !listEl._allData) return;
+    const all = listEl._allData;
+    const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_PAGE));
+    const currentPage = Math.min(Math.max(1, page), totalPages);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const slice = all.slice(start, start + ITEMS_PER_PAGE);
+
+    listEl.innerHTML = '';
+    slice.forEach(article => listEl.appendChild(createArticleItem(article)));
+    listEl.dataset.currentPage = String(currentPage);
+
+    const container = listEl.parentNode;
+    let paginationWrap = document.getElementById('articlesPagination');
+    if (paginationWrap && paginationWrap.parentNode) paginationWrap.parentNode.removeChild(paginationWrap);
+
+    if (totalPages <= 1) return;
+
+    const prevText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.previous) ? translations[currentLang].articles.previous : 'Précédent';
+    const nextText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.next) ? translations[currentLang].articles.next : 'Suivant';
+
+    paginationWrap = document.createElement('div');
+    paginationWrap.className = 'pagination-wrap';
+    paginationWrap.id = 'articlesPagination';
+    const nav = document.createElement('nav');
+    nav.className = 'pagination';
+    nav.setAttribute('aria-label', 'Pagination articles');
+
+    const prevBtn = document.createElement('button');
+    prevBtn.type = 'button';
+    prevBtn.className = 'pagination-btn pagination-prev';
+    prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i> ' + prevText;
+    prevBtn.disabled = currentPage === 1;
+    prevBtn.addEventListener('click', () => { renderArticlesPage(currentPage - 1); scrollToSection('articles'); });
+
+    const pagesContainer = document.createElement('span');
+    pagesContainer.className = 'pagination-pages';
+    for (let p = 1; p <= totalPages; p++) {
+        const bp = document.createElement('button');
+        bp.type = 'button';
+        bp.className = 'pagination-btn pagination-page' + (p === currentPage ? ' active' : '');
+        bp.textContent = p;
+        bp.addEventListener('click', () => { renderArticlesPage(p); scrollToSection('articles'); });
+        pagesContainer.appendChild(bp);
+    }
+
+    const nextBtn = document.createElement('button');
+    nextBtn.type = 'button';
+    nextBtn.className = 'pagination-btn pagination-next';
+    nextBtn.innerHTML = nextText + ' <i class="fas fa-chevron-right"></i>';
+    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.addEventListener('click', () => { renderArticlesPage(currentPage + 1); scrollToSection('articles'); });
+
+    nav.appendChild(prevBtn);
+    nav.appendChild(pagesContainer);
+    nav.appendChild(nextBtn);
+    paginationWrap.appendChild(nav);
+    container.appendChild(paginationWrap);
+}
+
+/**
+ * Charge les articles depuis articles.json et localStorage, puis affiche la page 1
  */
 async function loadArticles() {
     const articlesList = document.getElementById('articlesList');
-    
     if (!articlesList) {
         console.error('Élément articlesList non trouvé');
         return;
     }
-    
     try {
-        // Charger les articles depuis le fichier JSON
         const response = await fetch('articles.json');
         let jsonArticles = [];
-        
-        if (response.ok) {
-            jsonArticles = await response.json();
-        }
-        
-        // Charger les articles depuis localStorage
+        if (response.ok) jsonArticles = await response.json();
         const localArticles = getLocalArticles();
-        
-        // Combiner les deux listes (articles locaux en premier)
         const allArticles = [...localArticles, ...jsonArticles];
-        
+
         if (allArticles.length === 0) {
-            const noArticlesText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.noArticles) 
-                ? translations[currentLang].articles.noArticles 
+            const noArticlesText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.noArticles)
+                ? translations[currentLang].articles.noArticles
                 : 'Aucun article disponible pour le moment.';
             articlesList.innerHTML = `<p class="loading">${noArticlesText}</p>`;
+            articlesList._allData = null;
             return;
         }
-        
-        articlesList.innerHTML = '';
-        articlesList.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
-        const totalArticles = allArticles.length;
-        allArticles.forEach((article, index) => {
-            const articleItem = createArticleItem(article);
-            if (index >= INITIAL_DISPLAY_COUNT) articleItem.classList.add('item-over-limit');
-            articlesList.appendChild(articleItem);
-        });
-        const container = articlesList.parentNode;
-        const existingBtn = document.getElementById('articlesLoadMoreBtn');
-        if (existingBtn && existingBtn.parentNode) existingBtn.parentNode.remove();
-        if (totalArticles > INITIAL_DISPLAY_COUNT) {
-            const wrap = document.createElement('div');
-            wrap.className = 'load-more-wrap';
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn btn-secondary btn-load-more';
-            btn.id = 'articlesLoadMoreBtn';
-            const loadMoreText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.loadMore) ? translations[currentLang].articles.loadMore : 'Voir plus';
-            const loadLessText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.loadLess) ? translations[currentLang].articles.loadLess : 'Voir moins';
-            btn.innerHTML = '<i class="fas fa-chevron-down"></i> <span class="btn-load-more-text">' + loadMoreText + '</span>';
-            btn.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                let v = parseInt(articlesList.dataset.visibleCount || '0', 10);
-                const isShowingMore = v < totalArticles;
-                if (isShowingMore) {
-                    v = Math.min(v + 3, totalArticles);
-                    articlesList.dataset.visibleCount = String(v);
-                    for (let i = 0; i < articlesList.children.length; i++) {
-                        articlesList.children[i].classList.toggle('item-over-limit', i >= v);
-                    }
-                    btn.querySelector('.btn-load-more-text').textContent = v >= totalArticles ? loadLessText : loadMoreText;
-                    btn.querySelector('i').className = v >= totalArticles ? 'fas fa-chevron-up' : 'fas fa-chevron-down';
-                } else {
-                    articlesList.dataset.visibleCount = String(INITIAL_DISPLAY_COUNT);
-                    for (let i = 0; i < articlesList.children.length; i++) {
-                        articlesList.children[i].classList.toggle('item-over-limit', i >= INITIAL_DISPLAY_COUNT);
-                    }
-                    btn.querySelector('.btn-load-more-text').textContent = loadMoreText;
-                    btn.querySelector('i').className = 'fas fa-chevron-down';
-                }
-                var articlesSection = document.getElementById('articles');
-                if (articlesSection) articlesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            });
-            wrap.appendChild(btn);
-            container.appendChild(wrap);
-        }
-        
+        articlesList._allData = allArticles;
+        renderArticlesPage(1);
     } catch (error) {
         console.error('Erreur lors du chargement des articles:', error);
-        if (articlesList) {
-            articlesList.innerHTML = `
-                <p class="loading" style="color: #ef4444;">
-                    Erreur lors du chargement des articles. 
-                    Vérifiez que le fichier articles.json existe et est valide.
-                </p>
-            `;
-        }
+        articlesList.innerHTML = `
+            <p class="loading" style="color: #ef4444;">
+                Erreur lors du chargement des articles. 
+                Vérifiez que le fichier articles.json existe et est valide.
+            </p>
+        `;
     }
 }
 
@@ -1225,7 +1249,7 @@ function createSkillItem(skill) {
     const certifiedText = (translations[currentLang] && translations[currentLang].skills && translations[currentLang].skills.certified) ? translations[currentLang].skills.certified : 'Certifié';
     const badgeText = skill.certification ? certifiedText : (skill.level + '%');
     skillItem.innerHTML = `
-        <i class="${skill.icon}"></i>
+        <span class="skill-item-icon"><i class="${skill.icon}" aria-hidden="true"></i></span>
         <span class="skill-name">${skill.name}</span>
         <span class="skill-percentage">${badgeText}</span>
         ${hasLink ? '<i class="fas fa-external-link-alt skill-item-external" aria-hidden="true"></i>' : ''}
