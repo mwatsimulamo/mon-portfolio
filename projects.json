@@ -7,5 +7,14 @@
     "github": "https://github.com/mwatsimulamo/wenze",
     "demo": "https://wenze-beta.vercel.app/",
     "cardano": true
+  },
+  {
+    "title": "Goma & Nyiragongo Hubs-CATS 2026",
+    "description": "A showcase highlighting the organization and collaboration of teams participating in the CATS 2026 Hackathon under the guidance of the Goma and Nyiragongo Hubs.",
+    "image": "assets/images/projects/goma.png",
+    "technologies": ["React", "JavaScript", "Vite", "CSS"],
+    "github": "https://github.com/ujuzi-labs/docs",
+    "demo": "https://docs-topaz-tau-22.vercel.app/",
+    "cardano": true
   }
 ]
