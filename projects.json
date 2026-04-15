@@ -1,6 +1,16 @@
 [
   {
+    "title": "UJUZI Labs",
+    "contributionsKey": "projects.ujuziLabs.contributions",
+    "descriptionKey": "projects.ujuziLabs.description",
+    "image": "assets/images/projects/ujuzi-labs.png",
+    "technologies": ["Vite", "TypeScript", "React", "shadcn-ui", "Tailwind CSS"],
+    "demo": "https://ujuzi-labs.vercel.app/",
+    "cardano": false
+  },
+  {
     "title": "Wenze",
+    "contributions": "UI, UX, Supabase (backend), Cardano blockchain (wallet connection, ADA payment, escrow smart contract, ADA distribution through Wenze Points)",
     "description": "Trusted marketplace for Goma (DRC) enabling online buying and selling of products. Payments in ADA are secured via a Cardano smart contract escrow until confirmed by the buyer. Features include user authentication, integrated messaging, and a WZP points system. Deployed on the Preprod Testnet.",
     "image": "assets/images/projects/wenze.png",
     "technologies": ["React", "TypeScript", "Vite", "TailwindCSS", "Cardano", "Lucid", "Aiken", "Supabase", "Blockfrost"],
@@ -9,8 +19,9 @@
     "cardano": true
   },
   {
-    "title": "Goma & Nyiragongo Hubs-CATS 2026",
-    "description": "A showcase highlighting the organization and collaboration of teams participating in the CATS 2026 Hackathon under the guidance of the Goma and Nyiragongo Hubs.",
+    "title": "Goma Hub-CATS 2026",
+    "contributions": "UI, IX",
+    "description": "A showcase highlighting the organization and collaboration of teams participating in the CATS 2026 Hackathon under the guidance of the Goma Hub.",
     "image": "assets/images/projects/goma.png",
     "technologies": ["React", "JavaScript", "Vite", "CSS"],
     "github": "https://github.com/ujuzi-labs/docs",

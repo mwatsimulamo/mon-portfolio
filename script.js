@@ -8,6 +8,8 @@
  * - Le chargement dynamique des articles depuis articles.json
  * - Le formulaire de contact
  * - L'affichage du CV
+ *
+ * Dépendances (chargées avant ce script) : js/article-slugs.js, js/markdown-portfolio.js (markdown + images inline).
  * ============================================
  */
 
@@ -16,10 +18,14 @@
 // ============================================
 let translations = {};
 let currentLang = localStorage.getItem('portfolio-lang') || 'fr';
+/** Machine à écrire sous le nom (hero), chaîne de setTimeout */
+let heroTypewriterTimerId = null;
+/** Pause entre deux phrases (rotation continue sous le nom) */
+let heroRotateDelayId = null;
+/** Durée d’affichage d’une phrase terminée avant la suivante (ms) */
+const HERO_ROTATE_PAUSE_MS = 2800;
 
-/** Mot de passe pour accéder au mode administration (articles / projets). Changez-le ! */
-const ADMIN_PASSWORD = '2054';
-const ADMIN_STORAGE_KEY = 'portfolio-admin';
+const THEME_STORAGE_KEY = 'portfolio-theme';
 
 /** Email de réception des messages du formulaire de contact */
 const CONTACT_EMAIL = 'mwatsimulamoolivier@gmail.com';
@@ -28,6 +34,35 @@ const FORMSPREE_FORM_ID = 'mjgearjz';
 
 /** Nombre d'articles et d'expériences affichés par page (pagination). */
 const ITEMS_PER_PAGE = 5;
+const ARTICLE_CATEGORIES = [
+    'Web3',
+    'Cardano Blockchain',
+    'Crypto',
+    'Actualites',
+    'Tutoriels',
+    'Education',
+    'IA',
+    'Developpement',
+    'Communaute'
+];
+const SKILLS_STORAGE_KEY = 'portfolio-skills';
+const SKILL_CATEGORIES = ['frontend', 'backend', 'blockchain', 'tools', 'certifications'];
+let currentSkillsData = {
+    frontend: [],
+    backend: [],
+    blockchain: [],
+    tools: [],
+    certifications: []
+};
+let currentProjectsData = [];
+let currentArticlesData = [];
+let currentExperiencesData = [];
+const articleFilterState = { query: '', category: '' };
+let supabaseAdminAuthenticated = false;
+let articleReaderReturnFocus = null;
+let currentReaderArticleSlug = null;
+const ARTICLE_ENGAGEMENT_STORAGE_KEY = 'portfolio-article-engagement';
+const articleEngagementCache = {};
 
 // ============================================
 // TOAST NOTIFICATIONS
@@ -63,54 +98,6 @@ function showToast(message, type = 'success', duration = 2500) {
 }
 
 /**
- * Formate le formatage inline : **gras**, *italique*, __souligné__
- * À appliquer sur du texte déjà échappé HTML.
- */
-function applyInlineFormatting(escapedText) {
-    return escapedText
-        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-        .replace(/__([^_]+)__/g, '<u>$1</u>')
-        .replace(/\*([^*]+)\*/g, '<em>$1</em>');
-}
-
-/**
- * Formate un texte description en HTML avec paragraphes, listes et formatage (gras, italique, souligné).
- * Syntaxe : **gras** *italique* __souligné__ ; lignes commençant par "- " ou "* " = liste à puces.
- * Échappe le HTML pour la sécurité.
- */
-function formatDescriptionAsParagraphs(description) {
-    if (!description || typeof description !== 'string') return '';
-    const escape = (s) => String(s)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;');
-    const blocks = description.split(/\n\n+/).map(b => b.trim()).filter(Boolean);
-    if (blocks.length === 0) {
-        const t = description.trim();
-        if (!t) return '';
-        const escaped = escape(t).replace(/\n/g, '<br>');
-        return `<p class="description-para">${applyInlineFormatting(escaped)}</p>`;
-    }
-    const out = [];
-    for (const block of blocks) {
-        const lines = block.split(/\n/).map(l => l.trimEnd());
-        const isList = lines.every(l => l === '' || /^[-*]\s/.test(l));
-        if (isList && lines.some(l => l.length > 0)) {
-            const items = lines.filter(l => l.length > 0).map(l => {
-                const content = l.replace(/^[-*]\s+/, '');
-                return '<li>' + applyInlineFormatting(escape(content).replace(/\n/g, ' ')) + '</li>';
-            }).join('');
-            out.push('<ul class="description-list">' + items + '</ul>');
-        } else {
-            const escaped = escape(block).replace(/\n/g, '<br>');
-            out.push('<p class="description-para">' + applyInlineFormatting(escaped) + '</p>');
-        }
-    }
-    return out.join('');
-}
-
-/**
  * Insère du texte autour de la sélection dans un textarea (pour la barre de formatage).
  */
 function wrapSelectionInTextarea(textarea, before, after) {
@@ -136,12 +123,142 @@ function wrapSelectionInTextarea(textarea, before, after) {
  */
 function insertPrefixAtLineStart(textarea, prefix) {
     const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
     const text = textarea.value;
-    let lineStart = text.lastIndexOf('\n', start - 1) + 1;
-    const before = text.slice(0, lineStart);
-    const after = text.slice(lineStart);
-    textarea.value = before + prefix + after;
-    textarea.selectionStart = textarea.selectionEnd = start + prefix.length;
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    let lineEnd = text.indexOf('\n', end);
+    if (lineEnd < 0) lineEnd = text.length;
+    const block = text.slice(lineStart, lineEnd);
+    const lines = block.split('\n');
+    const pref = String(prefix || '');
+    const updated = lines.map(function (line) {
+        if (!line.trim()) return line;
+        return pref + line;
+    }).join('\n');
+    textarea.value = text.slice(0, lineStart) + updated + text.slice(lineEnd);
+    textarea.selectionStart = lineStart;
+    textarea.selectionEnd = lineStart + updated.length;
+    textarea.focus();
+}
+
+function applyHeadingAtLineStart(textarea, level) {
+    const safeLevel = Math.max(1, Math.min(6, Number(level) || 1));
+    const headingPrefix = '#'.repeat(safeLevel) + ' ';
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const blockStart = text.lastIndexOf('\n', start - 1) + 1;
+    let blockEnd = text.indexOf('\n', end);
+    if (blockEnd < 0) blockEnd = text.length;
+    const block = text.slice(blockStart, blockEnd);
+    const updated = block.split('\n').map(function (line) {
+        const clean = line.replace(/^#{1,6}\s+/, '');
+        if (!clean.trim()) return line;
+        return headingPrefix + clean;
+    }).join('\n');
+    textarea.value = text.slice(0, blockStart) + updated + text.slice(blockEnd);
+    textarea.selectionStart = blockStart;
+    textarea.selectionEnd = blockStart + updated.length;
+    textarea.focus();
+}
+
+function insertTextAtCursor(textarea, textToInsert) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const insert = String(textToInsert || '');
+    textarea.value = text.slice(0, start) + insert + text.slice(end);
+    const caret = start + insert.length;
+    textarea.selectionStart = textarea.selectionEnd = caret;
+    textarea.focus();
+}
+
+function continueListOnEnter(textarea, event) {
+    if (!textarea || !event || event.key !== 'Enter' || event.shiftKey) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value || '';
+    const lineStart = text.lastIndexOf('\n', start - 1) + 1;
+    let lineEnd = text.indexOf('\n', start);
+    if (lineEnd < 0) lineEnd = text.length;
+    const line = text.slice(lineStart, lineEnd);
+    const beforeCaret = line.slice(0, Math.max(0, start - lineStart));
+    const afterCaret = line.slice(Math.max(0, start - lineStart));
+
+    const bulletMatch = line.match(/^(\s*)([-*+•◦▪→✓.])\s+(.*)$/);
+    const orderedMatch = line.match(/^(\s*)((?:\d+|[a-zA-Z]|[ivxlcdmIVXLCDM]+)[.)])\s+(.*)$/);
+    if (!bulletMatch && !orderedMatch) return;
+    if (start !== end) return;
+
+    event.preventDefault();
+
+    if (bulletMatch) {
+        const indent = bulletMatch[1] || '';
+        const marker = bulletMatch[2] || '-';
+        const content = (bulletMatch[3] || '').trim();
+        // Si la ligne de liste est vide, second Enter retire la puce.
+        if (!content) {
+            const cleanedLine = '';
+            textarea.value = text.slice(0, lineStart) + cleanedLine + text.slice(lineEnd);
+            textarea.selectionStart = textarea.selectionEnd = lineStart;
+            return;
+        }
+        const insert = '\n' + indent + marker + ' ';
+        textarea.value = text.slice(0, start) + insert + text.slice(end);
+        const pos = start + insert.length;
+        textarea.selectionStart = textarea.selectionEnd = pos;
+        return;
+    }
+
+    const indent = orderedMatch[1] || '';
+    const marker = orderedMatch[2] || '1.';
+    const content = (orderedMatch[3] || '').trim();
+    if (!content) {
+        textarea.value = text.slice(0, lineStart) + '' + text.slice(lineEnd);
+        textarea.selectionStart = textarea.selectionEnd = lineStart;
+        return;
+    }
+
+    let nextMarker = marker;
+    const numMatch = marker.match(/^(\d+)([.)])$/);
+    const alphaMatch = marker.match(/^([a-zA-Z])([.)])$/);
+    const romanMatch = marker.match(/^([ivxlcdmIVXLCDM]+)([.)])$/);
+    if (numMatch) {
+        nextMarker = String(Number(numMatch[1]) + 1) + numMatch[2];
+    } else if (alphaMatch) {
+        const code = alphaMatch[1].charCodeAt(0);
+        const isLower = code >= 97 && code <= 122;
+        const isUpper = code >= 65 && code <= 90;
+        if (isLower || isUpper) {
+            const base = isLower ? 97 : 65;
+            const next = ((code - base + 1) % 26) + base;
+            nextMarker = String.fromCharCode(next) + alphaMatch[2];
+        }
+    } else if (romanMatch) {
+        // Pour la liste romaine, on garde le même préfixe (simple et prévisible).
+        nextMarker = marker;
+    }
+
+    const insert = '\n' + indent + nextMarker + ' ';
+    textarea.value = text.slice(0, start) + insert + text.slice(end);
+    const pos = start + insert.length;
+    textarea.selectionStart = textarea.selectionEnd = pos;
+}
+
+function escapeRegExp(value) {
+    return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function wrapSelectionAsBlock(textarea, kind) {
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.slice(start, end) || 'votre texte';
+    const marker = String(kind || 'left').toLowerCase();
+    const wrapped = `[${marker}]\n${selected}\n[/${marker}]`;
+    textarea.value = text.slice(0, start) + wrapped + text.slice(end);
+    textarea.selectionStart = start + wrapped.length;
+    textarea.selectionEnd = textarea.selectionStart;
     textarea.focus();
 }
 
@@ -160,12 +277,98 @@ function initDescriptionToolbars() {
                 wrapSelectionInTextarea(textarea, wrap, wrap);
             });
         });
-        toolbar.querySelectorAll('.toolbar-btn[data-prefix]').forEach(btn => {
+        toolbar.querySelectorAll('[data-prefix]').forEach(btn => {
             btn.addEventListener('click', function(e) {
                 e.preventDefault();
                 const prefix = this.getAttribute('data-prefix');
                 insertPrefixAtLineStart(textarea, prefix);
+                if (typeof refreshArticleEditorPreview === 'function') refreshArticleEditorPreview();
+                toolbar.querySelectorAll('[data-bullet-dropdown]').forEach(function (dd) {
+                    dd.classList.remove('toolbar-dropdown--open');
+                });
             });
+        });
+        toolbar.querySelectorAll('[data-bullet-menu-toggle]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                const dropdown = this.closest('[data-bullet-dropdown]');
+                if (!dropdown) return;
+                const shouldOpen = !dropdown.classList.contains('toolbar-dropdown--open');
+                toolbar.querySelectorAll('[data-bullet-dropdown]').forEach(function (dd) {
+                    dd.classList.remove('toolbar-dropdown--open');
+                });
+                if (shouldOpen) dropdown.classList.add('toolbar-dropdown--open');
+            });
+        });
+        toolbar.querySelectorAll('.toolbar-btn[data-heading]').forEach(btn => {
+            btn.addEventListener('click', function (e) {
+                e.preventDefault();
+                const level = this.getAttribute('data-heading');
+                applyHeadingAtLineStart(textarea, level);
+                if (typeof refreshArticleEditorPreview === 'function') refreshArticleEditorPreview();
+            });
+        });
+        toolbar.querySelectorAll('.toolbar-btn[data-insert]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const insertText = this.getAttribute('data-insert');
+                insertTextAtCursor(textarea, insertText);
+                if (typeof refreshArticleEditorPreview === 'function') refreshArticleEditorPreview();
+            });
+        });
+        toolbar.querySelectorAll('.toolbar-btn[data-block]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const blockType = String(this.getAttribute('data-block') || '').toLowerCase();
+                const selected = textarea.value.slice(textarea.selectionStart, textarea.selectionEnd);
+                const wrappedRe = new RegExp('^\\[\\s*' + escapeRegExp(blockType) + '\\s*\\]\\n([\\s\\S]*?)\\n\\[\\s*\\/\\s*' + escapeRegExp(blockType) + '\\s*\\]$');
+                if (selected && wrappedRe.test(selected)) {
+                    insertTextAtCursor(textarea, selected.replace(wrappedRe, '$1'));
+                } else {
+                    wrapSelectionAsBlock(textarea, blockType);
+                }
+                if (typeof refreshArticleEditorPreview === 'function') refreshArticleEditorPreview();
+            });
+        });
+        toolbar.querySelectorAll('.toolbar-btn[data-image-local]').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const picker = document.createElement('input');
+                picker.type = 'file';
+                picker.accept = 'image/*';
+                picker.addEventListener('change', function () {
+                    const f = picker.files && picker.files[0];
+                    if (f) insertMarkdownImageFileAtCursor(textarea, f);
+                });
+                picker.click();
+            });
+        });
+        textarea.addEventListener('paste', function (e) {
+            const items = e.clipboardData && e.clipboardData.items;
+            if (!items || !items.length) return;
+            for (let i = 0; i < items.length; i++) {
+                const it = items[i];
+                if (it.kind === 'file' && it.type.startsWith('image/')) {
+                    e.preventDefault();
+                    const file = it.getAsFile();
+                    if (file) insertMarkdownImageFileAtCursor(textarea, file);
+                    break;
+                }
+            }
+        });
+        textarea.addEventListener('keydown', function (e) {
+            continueListOnEnter(textarea, e);
+            if (typeof refreshArticleEditorPreview === 'function') {
+                window.requestAnimationFrame(function () {
+                    refreshArticleEditorPreview();
+                });
+            }
+        });
+    });
+    document.addEventListener('click', function () {
+        document.querySelectorAll('[data-bullet-dropdown]').forEach(function (dd) {
+            dd.classList.remove('toolbar-dropdown--open');
         });
     });
 }
@@ -186,21 +389,36 @@ function scrollToSection(sectionId) {
 // ============================================
 
 /**
- * Affiche la modal premium de saisie du mot de passe admin et renvoie une Promise avec la valeur saisie ou null si annulé.
+ * Affiche la modal de connexion admin Supabase et renvoie
+ * { email, password } ou null si annulé.
  */
-function showAdminPasswordModal() {
+function showAdminSupabaseModal() {
     const overlay = document.getElementById('adminModalOverlay');
     const form = document.getElementById('adminModalForm');
+    const emailInput = document.getElementById('adminModalEmail');
     const input = document.getElementById('adminModalPassword');
+    const toggleBtn = document.getElementById('adminModalTogglePassword');
     const cancelBtn = document.getElementById('adminModalCancel');
-    if (!overlay || !form || !input) return Promise.resolve(null);
+    if (!overlay || !form || !input || !emailInput) return Promise.resolve(null);
 
     return new Promise(function(resolve) {
         var settled = false;
+        function setPasswordVisibility(show) {
+            input.type = show ? 'text' : 'password';
+            if (toggleBtn) {
+                toggleBtn.innerHTML = show
+                    ? '<i class="fas fa-eye-slash" aria-hidden="true"></i>'
+                    : '<i class="fas fa-eye" aria-hidden="true"></i>';
+                toggleBtn.setAttribute('aria-label', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+                toggleBtn.setAttribute('title', show ? 'Masquer le mot de passe' : 'Afficher le mot de passe');
+            }
+        }
         function closeModal() {
             overlay.classList.remove('admin-modal--open');
             overlay.setAttribute('aria-hidden', 'true');
+            emailInput.value = '';
             input.value = '';
+            setPasswordVisibility(false);
         }
         function done(value) {
             if (settled) return;
@@ -210,12 +428,16 @@ function showAdminPasswordModal() {
             cancelBtn.removeEventListener('click', onCancel);
             overlay.removeEventListener('click', onOverlayClick);
             document.removeEventListener('keydown', onEscape);
+            if (toggleBtn) toggleBtn.removeEventListener('click', onTogglePassword);
             resolve(value);
         }
 
         function onSubmit(e) {
             e.preventDefault();
-            done(input.value.trim());
+            done({
+                email: String(emailInput.value || '').trim(),
+                password: String(input.value || '')
+            });
         }
         function onCancel() { done(null); }
         function onOverlayClick(e) {
@@ -224,15 +446,20 @@ function showAdminPasswordModal() {
         function onEscape(e) {
             if (e.key === 'Escape') done(null);
         }
+        function onTogglePassword() {
+            setPasswordVisibility(input.type === 'password');
+        }
 
         form.addEventListener('submit', onSubmit);
         cancelBtn.addEventListener('click', onCancel);
         overlay.addEventListener('click', onOverlayClick);
         document.addEventListener('keydown', onEscape);
+        if (toggleBtn) toggleBtn.addEventListener('click', onTogglePassword);
 
+        setPasswordVisibility(false);
         overlay.classList.add('admin-modal--open');
         overlay.setAttribute('aria-hidden', 'false');
-        input.focus();
+        emailInput.focus();
     });
 }
 
@@ -250,12 +477,36 @@ function setAdminUIVisibility(isAdmin) {
     if (logoutLink) logoutLink.style.display = isAdmin ? '' : 'none';
 }
 
+function refreshAdminOnlyVisibility() {
+    setAdminUIVisibility(!!supabaseAdminAuthenticated);
+}
+
+function setSupabaseStripVisibility(visible) {
+    const strip = document.getElementById('supabaseAdminStrip');
+    if (!strip) return;
+    strip.style.display = 'none';
+}
+
+function setAdminFromSupabaseSession(session) {
+    supabaseAdminAuthenticated = !!session;
+    refreshAdminOnlyVisibility();
+}
+
 /**
  * Initialise la protection : masque les boutons admin sauf si déjà authentifié
  */
 function initAdminGate() {
-    const isUnlocked = localStorage.getItem(ADMIN_STORAGE_KEY) === '1';
-    setAdminUIVisibility(!!isUnlocked);
+    setAdminUIVisibility(!!supabaseAdminAuthenticated);
+    setSupabaseStripVisibility(false);
+
+    if (window.__portfolioSupabaseSession) {
+        setAdminFromSupabaseSession(window.__portfolioSupabaseSession);
+    }
+
+    window.addEventListener('portfolio-supabase-auth-changed', function (ev) {
+        const session = ev && ev.detail ? ev.detail.session : null;
+        setAdminFromSupabaseSession(session);
+    });
 
     const unlockTrigger = document.getElementById('adminUnlockTrigger');
     const logoutTrigger = document.getElementById('adminLogoutTrigger');
@@ -263,14 +514,26 @@ function initAdminGate() {
     if (unlockTrigger) {
         unlockTrigger.addEventListener('click', function(e) {
             e.preventDefault();
-            showAdminPasswordModal().then(function(password) {
-                if (password === ADMIN_PASSWORD) {
-                    localStorage.setItem(ADMIN_STORAGE_KEY, '1');
-                    setAdminUIVisibility(true);
-                    showToast('Mode admin activé.', 'success');
-                } else if (password !== null) {
-                    showToast('Mot de passe incorrect.', 'info');
+            if (supabaseAdminAuthenticated) {
+                showToast('Mode admin actif via Supabase.', 'success');
+                return;
+            }
+            showAdminSupabaseModal().then(async function (credentials) {
+                if (!credentials) return;
+                if (!credentials.email || !credentials.password) {
+                    showToast('Email et mot de passe requis.', 'info');
+                    return;
                 }
+                if (typeof window.portfolioSbSignInWithPassword !== 'function') {
+                    showToast('Supabase non configure.', 'info');
+                    return;
+                }
+                const out = await window.portfolioSbSignInWithPassword(credentials.email, credentials.password);
+                if (!out || !out.ok) {
+                    showToast((out && out.reason) ? out.reason : 'Connexion impossible.', 'info');
+                    return;
+                }
+                showToast('Mode admin active.', 'success');
             });
         });
     }
@@ -278,12 +541,58 @@ function initAdminGate() {
     if (logoutTrigger) {
         logoutTrigger.addEventListener('click', function(e) {
             e.preventDefault();
-            localStorage.removeItem(ADMIN_STORAGE_KEY);
+            supabaseAdminAuthenticated = false;
             setAdminUIVisibility(false);
+            setSupabaseStripVisibility(false);
             document.getElementById('adminPanel') && (document.getElementById('adminPanel').style.display = 'none');
             document.getElementById('adminProjectPanel') && (document.getElementById('adminProjectPanel').style.display = 'none');
             document.getElementById('adminExperiencePanel') && (document.getElementById('adminExperiencePanel').style.display = 'none');
+            if (typeof window.portfolioSbSignOutAll === 'function') {
+                window.portfolioSbSignOutAll();
+            }
             showToast('Mode admin désactivé.', 'info');
+        });
+    }
+}
+
+/**
+ * Applique le thème (light | dark) et met à jour le bouton
+ */
+function applyTheme(theme) {
+    const safeTheme = theme === 'dark' ? 'dark' : 'light';
+    document.body.setAttribute('data-theme', safeTheme);
+    localStorage.setItem(THEME_STORAGE_KEY, safeTheme);
+
+    const icon = document.getElementById('themeToggleIcon');
+    const btn = document.getElementById('themeToggleBtn');
+    if (icon) {
+        icon.className = safeTheme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+    }
+    if (btn) {
+        const fr = currentLang === 'fr';
+        const toDark = fr ? 'Activer le mode sombre' : 'Enable dark mode';
+        const toLight = fr ? 'Activer le mode clair' : 'Enable light mode';
+        const label = safeTheme === 'dark' ? toLight : toDark;
+        btn.title = label;
+        btn.setAttribute('aria-label', label);
+    }
+}
+
+/**
+ * Initialise le bouton de thème (clair/sombre)
+ */
+function initThemeToggle() {
+    const btn = document.getElementById('themeToggleBtn');
+    const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+    const systemPrefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+
+    applyTheme(initialTheme);
+
+    if (btn) {
+        btn.addEventListener('click', function() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            applyTheme(isDark ? 'light' : 'dark');
         });
     }
 }
@@ -292,9 +601,14 @@ function initAdminGate() {
 // INITIALISATION
 // ============================================
 document.addEventListener('DOMContentLoaded', function() {
+    initThemeToggle();
     initAdminGate();
+    initProjectDescriptionModal();
+    initArticleReaderModal();
+    initArticleListClickDelegation();
     initTranslations();
     initNavigation();
+    initArticleFilters();
     loadProjects();
     loadExperiences();
     loadArticles();
@@ -307,12 +621,93 @@ document.addEventListener('DOMContentLoaded', function() {
     initArticleAdmin();
     initProjectAdmin();
     initExperienceAdmin();
+    initSkillsAdmin();
+    initInlineAdminQuickEdit();
+    initArticleImageTools();
     initDescriptionToolbars();
+    if (typeof window.initSupabasePortfolioBar === 'function') {
+        window.initSupabasePortfolioBar();
+    }
+
+    if (document.fonts && document.fonts.ready) {
+        document.fonts.ready.then(function() {
+            syncHeroRoleLineToNameWidthSoon();
+        });
+    }
+    window.addEventListener('popstate', function () {
+        const slug = new URL(window.location.href).searchParams.get('article');
+        if (!slug) closeArticleReaderModal(false);
+        else tryOpenArticleFromUrl();
+    });
 });
 
 // ============================================
 // NAVIGATION
 // ============================================
+
+/**
+ * Synchronise la hauteur de l’en-tête fixe (CSS var --header-stack-height) pour le padding du hero et le scroll.
+ */
+function syncHeaderStackHeight() {
+    const header = document.getElementById('siteHeader');
+    if (!header) return;
+    const h = Math.ceil(header.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--header-stack-height', `${Math.max(h, 72)}px`);
+}
+
+function getScrollMarginTop() {
+    const raw = getComputedStyle(document.documentElement).getPropertyValue('--header-stack-height').trim();
+    const n = parseInt(raw, 10);
+    return Number.isFinite(n) ? n : 100;
+}
+
+/**
+ * Aligne la fin du bloc sous-titres avec la fin du nom : .hero-identity prend la même largeur
+ * que le h1 (kicker + nom), pas toute la colonne — le texte du sous-titre se termine donc au même niveau.
+ */
+function syncHeroRoleLineToNameWidth() {
+    const title = document.querySelector('.hero-title');
+    const name = document.querySelector('.hero-title-name');
+    const identity = document.querySelector('.hero-identity');
+    if (!title || !identity) return;
+    /* Mobile : la colonne centrée utilise toute la largeur utile, pas de calage sur le h1 */
+    if (typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 960px)').matches) {
+        identity.style.width = '';
+        identity.style.maxWidth = '';
+        return;
+    }
+    const titleRectW = Math.ceil(title.getBoundingClientRect().width);
+    const titleScrollW = Math.ceil(title.scrollWidth || 0);
+    const nameRectW = name ? Math.ceil(name.getBoundingClientRect().width) : 0;
+    const titleW = Math.max(titleRectW, titleScrollW, nameRectW, 0);
+    const parent = identity.parentElement;
+    const capW = parent ? Math.ceil(parent.getBoundingClientRect().width) : titleW;
+    const safeCap = Math.max(capW, 0);
+    const w = Math.min(Math.max(titleW, 1), safeCap || titleW);
+
+    // Garde-fou: si la mesure est incohérente (ex: 1px), revenir en auto.
+    if (!Number.isFinite(w) || w < 120) {
+        identity.style.width = '';
+        identity.style.maxWidth = '';
+        return;
+    }
+    identity.style.width = w + 'px';
+    identity.style.maxWidth = w + 'px';
+}
+
+/** Recalcul après reflow (police, justify, taille du sous-titre). */
+function syncHeroRoleLineToNameWidthSoon() {
+    syncHeroRoleLineToNameWidth();
+    requestAnimationFrame(function() {
+        syncHeroRoleLineToNameWidth();
+    });
+}
+
+/** Fin de frappe : texte seul (sans curseur inline) pour un justify fiable sur toutes les lignes. */
+function finalizeHeroTypewriterPlainText(el, full) {
+    el.textContent = full;
+    el.classList.add('hero-typewriter--final');
+}
 
 /**
  * Initialise la navigation (menu hamburger, scroll, active links)
@@ -322,6 +717,17 @@ function initNavigation() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.getElementById('navMenu');
     const navLinks = document.querySelectorAll('.nav-link');
+
+    syncHeaderStackHeight();
+    syncHeroRoleLineToNameWidthSoon();
+    window.addEventListener('resize', function() {
+        syncHeaderStackHeight();
+        syncHeroRoleLineToNameWidthSoon();
+    });
+    window.addEventListener('load', function() {
+        syncHeaderStackHeight();
+        syncHeroRoleLineToNameWidthSoon();
+    });
 
     // Menu hamburger pour mobile
     if (hamburger) {
@@ -340,6 +746,16 @@ function initNavigation() {
             }
         });
     });
+
+    const brandHomeLink = document.querySelector('.nav-brand a[href="#accueil"]');
+    if (brandHomeLink && hamburger && navMenu) {
+        brandHomeLink.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            }
+        });
+    }
 
     // Ajouter la classe 'scrolled' à la navbar au scroll
     window.addEventListener('scroll', function() {
@@ -361,7 +777,7 @@ function initNavigation() {
                 e.preventDefault();
                 const target = document.querySelector(href);
                 if (target) {
-                    const offsetTop = target.offsetTop - 80;
+                    const offsetTop = target.offsetTop - getScrollMarginTop();
                     window.scrollTo({
                         top: offsetTop,
                         behavior: 'smooth'
@@ -370,6 +786,8 @@ function initNavigation() {
             }
         });
     });
+
+    updateActiveNavLink();
 }
 
 /**
@@ -378,10 +796,12 @@ function initNavigation() {
 function updateActiveNavLink() {
     const sections = document.querySelectorAll('.section, .hero');
     const navLinks = document.querySelectorAll('.nav-link');
+    const brandHome = document.querySelector('.nav-brand a[href="#accueil"]');
 
     let current = '';
+    const margin = getScrollMarginTop() + 12;
     sections.forEach(section => {
-        const sectionTop = section.offsetTop - 100;
+        const sectionTop = section.offsetTop - margin;
         const sectionHeight = section.clientHeight;
         if (window.scrollY >= sectionTop && window.scrollY < sectionTop + sectionHeight) {
             current = section.getAttribute('id');
@@ -394,11 +814,95 @@ function updateActiveNavLink() {
             link.classList.add('active');
         }
     });
+
+    if (brandHome) {
+        if (current === 'accueil') {
+            brandHome.classList.add('active');
+        } else {
+            brandHome.classList.remove('active');
+        }
+    }
 }
 
 // ============================================
 // CHARGEMENT DES PROJETS
 // ============================================
+
+async function mergeProjectsFromSources() {
+    let fromFile = [];
+    try {
+        const response = await fetch('projects.json');
+        if (response.ok) fromFile = await response.json();
+    } catch (e) {
+        /* ignore */
+    }
+    return [...getLocalProjects(), ...fromFile];
+}
+
+async function mergeArticlesFromSources() {
+    let fromFile = [];
+    try {
+        const response = await fetch('articles.json');
+        if (response.ok) fromFile = await response.json();
+    } catch (e) {
+        /* ignore */
+    }
+    return mergeArticleListsPreferLocal(getLocalArticles(), Array.isArray(fromFile) ? fromFile : []);
+}
+
+async function mergeExperiencesFromSources() {
+    let fromFile = [];
+    try {
+        const response = await fetch('experiences.json');
+        if (response.ok) fromFile = await response.json();
+    } catch (e) {
+        /* ignore */
+    }
+    return [...getLocalExperiences(), ...fromFile];
+}
+
+async function mergeSkillsFromSources() {
+    const local = getLocalSkills();
+    if (hasAnySkills(local)) return cloneSkillsData(local);
+    let fromFile = createEmptySkillsData();
+    try {
+        const response = await fetch('skills.json');
+        if (response.ok) fromFile = normalizeSkillsData(await response.json());
+    } catch (e) {
+        /* ignore */
+    }
+    return cloneSkillsData(fromFile);
+}
+
+/**
+ * Pousse le JSON fusionné vers Supabase si le client est configuré et l’utilisateur connecté.
+ * @param {'projects'|'articles'|'experiences'|'skills'} contentKey
+ */
+function notifySupabasePortfolioPersist(contentKey) {
+    if (typeof window.persistPortfolioContentToSupabase !== 'function') return;
+    let merger;
+    if (contentKey === 'projects') merger = mergeProjectsFromSources;
+    else if (contentKey === 'articles') merger = mergeArticlesFromSources;
+    else if (contentKey === 'experiences') merger = mergeExperiencesFromSources;
+    else if (contentKey === 'skills') merger = mergeSkillsFromSources;
+    else return;
+    merger()
+        .then(function (body) {
+            return window.persistPortfolioContentToSupabase(contentKey, body);
+        })
+        .then(function (res) {
+            if (!res) return;
+            if (res.ok) showToast('Synchronisé sur Supabase.', 'success');
+            else if (res.reason === 'no_session') {
+                showToast('Connectez-vous à Supabase (bandeau en bas) pour sauver en ligne.', 'info');
+            } else if (res.reason !== 'no_client') {
+                showToast('Supabase : ' + res.reason, 'info');
+            }
+        })
+        .catch(function (err) {
+            console.warn('Supabase persist', err);
+        });
+}
 
 /**
  * Charge les projets depuis projects.json et localStorage, puis les affiche
@@ -412,20 +916,35 @@ async function loadProjects() {
     }
     
     try {
-        let projectsFromFile = [];
-        try {
-            const response = await fetch('projects.json');
-            if (response.ok) {
-                projectsFromFile = await response.json();
+        let allProjects = [];
+        let usedSupabase = false;
+        if (typeof window.fetchPortfolioBody === 'function') {
+            try {
+                const remote = await window.fetchPortfolioBody('projects');
+                if (Array.isArray(remote) && remote.length > 0) {
+                    allProjects = remote;
+                    usedSupabase = true;
+                }
+            } catch (e) {
+                console.warn('Lecture Supabase projects:', e);
             }
-        } catch (e) {
-            console.warn('Fichier projects.json non disponible, utilisation des projets locaux uniquement.');
+        }
+        if (!usedSupabase) {
+            let projectsFromFile = [];
+            try {
+                const response = await fetch('projects.json');
+                if (response.ok) {
+                    projectsFromFile = await response.json();
+                }
+            } catch (e) {
+                console.warn('Fichier projects.json non disponible, utilisation des projets locaux uniquement.');
+            }
+            const localProjects = getLocalProjects();
+            allProjects = [...localProjects, ...projectsFromFile];
         }
         
-        const localProjects = getLocalProjects();
-        const allProjects = [...localProjects, ...projectsFromFile];
-        
         if (allProjects.length === 0) {
+            currentProjectsData = [];
             const noProjectsText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.noProjects) 
                 ? translations[currentLang].projects.noProjects 
                 : 'Aucun projet disponible pour le moment.';
@@ -433,11 +952,13 @@ async function loadProjects() {
             return;
         }
         
+        currentProjectsData = allProjects.map(function (p) { return { ...p }; });
         projectsGrid.innerHTML = '';
-        allProjects.forEach(project => {
-            const projectCard = createProjectCard(project);
+        allProjects.forEach(function(project, index) {
+            const projectCard = createProjectCard(project, index);
             projectsGrid.appendChild(projectCard);
         });
+        refreshAdminOnlyVisibility();
         
     } catch (error) {
         console.error('Erreur lors du chargement des projets:', error);
@@ -516,96 +1037,640 @@ function exportProjects() {
  * @param {Object} project - Données du projet
  * @returns {HTMLElement} - Élément HTML de la carte projet
  */
-const PROJECT_DESCRIPTION_COLLAPSE_CHARS = 200;
+function escapeHtml(str) {
+    if (str == null) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
-function createProjectCard(project) {
+function escapeAttr(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
+/**
+ * Lit une chaîne dans translations[currentLang] via un chemin « a.b.c ».
+ * @param {string} path
+ * @returns {string|null}
+ */
+function getTranslationStringByPath(path) {
+    if (!path || typeof path !== 'string') return null;
+    const keys = path.split('.').filter(Boolean);
+    let node = translations[currentLang];
+    for (let i = 0; i < keys.length; i++) {
+        if (!node || typeof node !== 'object' || node[keys[i]] === undefined) {
+            return null;
+        }
+        node = node[keys[i]];
+    }
+    return typeof node === 'string' ? node : null;
+}
+
+/**
+ * Texte projet : clé i18n (contributionsKey / descriptionKey) ou champ brut.
+ * @param {Object} project
+ * @param {'contributions'|'description'} fieldName
+ * @returns {string}
+ */
+function resolveProjectTextField(project, fieldName) {
+    const keyPath = project[fieldName + 'Key'];
+    if (keyPath && typeof keyPath === 'string') {
+        const fromPack = getTranslationStringByPath(keyPath.trim());
+        if (fromPack) return fromPack.trim();
+    }
+    const raw = project[fieldName];
+    if (raw != null && String(raw).trim()) return String(raw).trim();
+    return '';
+}
+
+let projectDescModalReturnFocus = null;
+
+function projectDescModalOnKeydown(e) {
+    if (e.key === 'Escape') {
+        e.preventDefault();
+        closeProjectDescriptionModal();
+    }
+}
+
+function initProjectDescriptionModal() {
+    const overlay = document.getElementById('projectDescModalOverlay');
+    if (!overlay) return;
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) {
+            closeProjectDescriptionModal();
+        }
+    });
+    const closeBtn = document.getElementById('projectDescModalClose');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            closeProjectDescriptionModal();
+        });
+    }
+}
+
+function openProjectDescriptionModal(projectTitle, contributionsHtml, descriptionHtml, contributionsHeadingOverride) {
+    const overlay = document.getElementById('projectDescModalOverlay');
+    const titleEl = document.getElementById('projectDescModalTitle');
+    const bodyEl = document.getElementById('projectDescModalBody');
+    const closeBtn = document.getElementById('projectDescModalClose');
+    if (!overlay || !titleEl || !bodyEl) return;
+
+    const alreadyOpen = overlay.classList.contains('project-desc-modal--open');
+    if (alreadyOpen) {
+        document.removeEventListener('keydown', projectDescModalOnKeydown);
+    } else {
+        projectDescModalReturnFocus = document.activeElement;
+    }
+
+    const tProj = translations[currentLang] && translations[currentLang].projects;
+    titleEl.textContent = projectTitle || '';
+
+    const contributionsHeading = (contributionsHeadingOverride && String(contributionsHeadingOverride).trim())
+        ? String(contributionsHeadingOverride).trim()
+        : ((tProj && tProj.contributionsTitle) ? tProj.contributionsTitle : 'Mes contributions');
+    const descriptionHeading = (tProj && tProj.descriptionSectionTitle) ? tProj.descriptionSectionTitle : 'Description';
+
+    const sections = [];
+    if (descriptionHtml) {
+        sections.push(`<div class="project-desc-modal-section"><h4 class="project-desc-modal-block-title">${escapeHtml(descriptionHeading)}</h4><div class="project-desc-modal-block description-block">${descriptionHtml}</div></div>`);
+    }
+    if (contributionsHtml) {
+        sections.push(`<div class="project-desc-modal-section"><h4 class="project-desc-modal-block-title">${escapeHtml(contributionsHeading)}</h4><div class="project-desc-modal-block description-block">${contributionsHtml}</div></div>`);
+    }
+    bodyEl.innerHTML = sections.join('');
+
+    if (closeBtn) {
+        closeBtn.setAttribute('aria-label', (tProj && tProj.closeDescription) ? tProj.closeDescription : 'Fermer');
+    }
+
+    overlay.classList.add('project-desc-modal--open');
+    overlay.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', projectDescModalOnKeydown);
+    if (closeBtn) {
+        closeBtn.focus();
+    }
+}
+
+function closeProjectDescriptionModal() {
+    const overlay = document.getElementById('projectDescModalOverlay');
+    if (!overlay || !overlay.classList.contains('project-desc-modal--open')) {
+        return;
+    }
+    overlay.classList.remove('project-desc-modal--open');
+    overlay.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    const bodyEl = document.getElementById('projectDescModalBody');
+    if (bodyEl) {
+        bodyEl.innerHTML = '';
+    }
+    const titleEl = document.getElementById('projectDescModalTitle');
+    if (titleEl) {
+        titleEl.textContent = '';
+    }
+    document.removeEventListener('keydown', projectDescModalOnKeydown);
+    const ref = projectDescModalReturnFocus;
+    projectDescModalReturnFocus = null;
+    if (ref && typeof ref.focus === 'function') {
+        try {
+            ref.focus();
+        } catch (err) {
+            /* ignore */
+        }
+    }
+}
+
+function getArticleEngagementStore() {
+    try {
+        const raw = localStorage.getItem(ARTICLE_ENGAGEMENT_STORAGE_KEY);
+        const parsed = raw ? JSON.parse(raw) : {};
+        return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_err) {
+        return {};
+    }
+}
+
+function setArticleEngagementStore(store) {
+    try {
+        localStorage.setItem(ARTICLE_ENGAGEMENT_STORAGE_KEY, JSON.stringify(store || {}));
+    } catch (_err) {
+        // ignore
+    }
+}
+
+function getArticleEngagement(slug) {
+    const all = getArticleEngagementStore();
+    const key = String(slug || '').trim();
+    const fallback = { likes: 0, reactions: {}, comments: [] };
+    if (!key || !all[key]) return fallback;
+    return Object.assign({}, fallback, all[key]);
+}
+
+function isAdminUnlocked() {
+    return !!supabaseAdminAuthenticated;
+}
+
+async function fetchArticleEngagement(slug) {
+    const key = String(slug || '').trim();
+    if (!key) return { likes: 0, reactions: {}, comments: [] };
+    if (articleEngagementCache[key]) return articleEngagementCache[key];
+    if (typeof window.fetchArticleEngagementFromSupabase === 'function') {
+        const remote = await window.fetchArticleEngagementFromSupabase(key);
+        if (remote && remote.ok && remote.data) {
+            const state = {
+                likes: Number(remote.data.likes) || 0,
+                reactions: (remote.data.reactions && typeof remote.data.reactions === 'object') ? remote.data.reactions : {},
+                comments: Array.isArray(remote.data.comments) ? remote.data.comments : []
+            };
+            articleEngagementCache[key] = state;
+            return state;
+        }
+    }
+    const local = getArticleEngagement(key);
+    articleEngagementCache[key] = local;
+    return local;
+}
+
+async function saveArticleEngagement(slug, state) {
+    const key = String(slug || '').trim();
+    if (!key) return false;
+    articleEngagementCache[key] = state;
+    if (typeof window.persistArticleEngagementToSupabase === 'function') {
+        const out = await window.persistArticleEngagementToSupabase(key, state);
+        if (out && out.ok) return true;
+    }
+    const all = getArticleEngagementStore();
+    all[key] = state;
+    setArticleEngagementStore(all);
+    return false;
+}
+
+async function updateArticleEngagement(slug, updater) {
+    const key = String(slug || '').trim();
+    if (!key) return null;
+    const current = await fetchArticleEngagement(key);
+    const next = updater ? updater(current) : current;
+    await saveArticleEngagement(key, next);
+    return next;
+}
+
+function renderArticleComments(comments) {
+    const listEl = document.getElementById('articleCommentsList');
+    if (!listEl) return;
+    const arr = Array.isArray(comments) ? comments : [];
+    if (!arr.length) {
+        listEl.innerHTML = '<p class="description-para">Aucun commentaire pour le moment.</p>';
+        return;
+    }
+    const canModerate = isAdminUnlocked();
+    listEl.innerHTML = arr.map(function (c, idx) {
+        const cid = c && c.id ? String(c.id) : `legacy-${idx}`;
+        const deleteBtn = canModerate
+            ? `<button type="button" class="article-comment-delete" data-comment-id="${escapeAttr(cid)}" title="Supprimer ce commentaire"><i class="fas fa-trash"></i></button>`
+            : '';
+        return `
+            <div class="article-comment-item">
+                <div class="article-comment-head">
+                    <strong>${escapeHtml(c.name || 'Lecteur')}</strong>
+                    <span>${escapeHtml(c.date || '')}</span>
+                    ${deleteBtn}
+                </div>
+                <div>${escapeHtml(c.text || '')}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+async function renderReaderEngagement(slug) {
+    const likeCountEl = document.getElementById('articleLikeCount');
+    const reactionsWrap = document.getElementById('articleReactions');
+    const data = await fetchArticleEngagement(slug);
+    if (likeCountEl) likeCountEl.textContent = String(data.likes || 0);
+    if (reactionsWrap) {
+        reactionsWrap.querySelectorAll('.reaction-btn[data-emoji]').forEach(function (btn) {
+            const emoji = btn.getAttribute('data-emoji');
+            const count = data.reactions && data.reactions[emoji] ? data.reactions[emoji] : 0;
+            btn.setAttribute('title', count > 0 ? `${emoji} ${count}` : emoji);
+        });
+    }
+    renderArticleComments(data.comments || []);
+}
+
+/**
+ * Contenu markdown principal (admin / JSON : souvent `content`, parfois `body` selon la source).
+ */
+function getArticleInternalBody(article) {
+    if (!article || typeof article !== 'object') return '';
+    const c = article.content;
+    if (c != null && String(c).trim()) return String(c).trim();
+    const b = article.body;
+    if (b != null && String(b).trim()) return String(b).trim();
+    return '';
+}
+
+function articleContentHtml(article) {
+    const full = getArticleInternalBody(article);
+    if (full) return markdownToHtml(full);
+    const legacy = article && article.description && String(article.description).trim() ? String(article.description).trim() : '';
+    if (legacy) return markdownToHtml(legacy);
+    return '<p class="description-para article-empty-state">Le contenu de cet article n’est pas encore disponible.</p>';
+}
+
+function setArticleReaderPageOpen(isOpen) {
+    const page = document.getElementById('articlePageSection');
+    if (!page) return;
+    if (isOpen) {
+        const header = document.getElementById('siteHeader');
+        if (header && header.parentNode && header.nextElementSibling !== page) {
+            header.insertAdjacentElement('afterend', page);
+        }
+    }
+    page.style.display = isOpen ? '' : 'none';
+    document.body.classList.toggle('article-page-open', !!isOpen);
+    if (isOpen) window.scrollTo({ top: 0, behavior: 'auto' });
+}
+
+function initArticleReaderModal() {
+    const page = document.getElementById('articlePageSection');
+    if (!page) return;
+    const closeBtn = document.getElementById('articleReaderClose');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            closeArticleReaderModal(true);
+        });
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') closeArticleReaderModal(true);
+    });
+    const shareBtn = document.getElementById('articleReaderShareBtn');
+    const shareLinkEl = document.getElementById('articleReaderShareLink');
+    const likeBtn = document.getElementById('articleLikeBtn');
+    const reactionsWrap = document.getElementById('articleReactions');
+    const commentForm = document.getElementById('articleCommentForm');
+    const commentInput = document.getElementById('articleCommentInput');
+    const commentName = document.getElementById('articleCommentName');
+    const commentsList = document.getElementById('articleCommentsList');
+    if (shareBtn) {
+        shareBtn.addEventListener('click', async function () {
+            const url = shareBtn.getAttribute('data-share-url') || window.location.href;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(url);
+                    showToast('Lien copié !', 'success');
+                }
+            } catch (err) {
+                showToast('Impossible de copier automatiquement.', 'info');
+            }
+        });
+    }
+    if (shareLinkEl) {
+        shareLinkEl.addEventListener('click', function () {
+            shareLinkEl.select();
+        });
+    }
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function () {
+            if (!currentReaderArticleSlug) return;
+            updateArticleEngagement(currentReaderArticleSlug, function (state) {
+                return Object.assign({}, state, { likes: (state.likes || 0) + 1 });
+            }).then(function () {
+                renderReaderEngagement(currentReaderArticleSlug);
+            });
+        });
+    }
+    if (reactionsWrap) {
+        reactionsWrap.addEventListener('click', function (e) {
+            const btn = e.target.closest('.reaction-btn[data-emoji]');
+            if (!btn || !currentReaderArticleSlug) return;
+            const emoji = btn.getAttribute('data-emoji');
+            updateArticleEngagement(currentReaderArticleSlug, function (state) {
+                const reactions = Object.assign({}, state.reactions || {});
+                reactions[emoji] = (reactions[emoji] || 0) + 1;
+                return Object.assign({}, state, { reactions: reactions });
+            }).then(function () {
+                renderReaderEngagement(currentReaderArticleSlug);
+            });
+        });
+    }
+    if (commentForm) {
+        commentForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (!currentReaderArticleSlug) return;
+            const txt = commentInput ? commentInput.value.trim() : '';
+            if (!txt) return;
+            const name = commentName && commentName.value.trim() ? commentName.value.trim() : 'Lecteur';
+            const date = new Date().toLocaleString();
+            updateArticleEngagement(currentReaderArticleSlug, function (state) {
+                const comments = Array.isArray(state.comments) ? state.comments.slice() : [];
+                comments.unshift({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8), name: name, text: txt, date: date });
+                return Object.assign({}, state, { comments: comments.slice(0, 100) });
+            }).then(function () {
+                renderReaderEngagement(currentReaderArticleSlug);
+            });
+            if (commentInput) commentInput.value = '';
+            showToast('Commentaire publié.', 'success');
+        });
+    }
+    if (commentsList) {
+        commentsList.addEventListener('click', function (e) {
+            const btn = e.target.closest('.article-comment-delete[data-comment-id]');
+            if (!btn || !currentReaderArticleSlug) return;
+            if (!isAdminUnlocked()) {
+                showToast('Mode admin requis pour modérer.', 'info');
+                return;
+            }
+            const commentId = btn.getAttribute('data-comment-id');
+            updateArticleEngagement(currentReaderArticleSlug, function (state) {
+                const comments = Array.isArray(state.comments) ? state.comments.slice() : [];
+                const next = comments.filter(function (c, idx) {
+                    const cid = c && c.id ? String(c.id) : `legacy-${idx}`;
+                    return cid !== commentId;
+                });
+                return Object.assign({}, state, { comments: next });
+            }).then(function () {
+                renderReaderEngagement(currentReaderArticleSlug);
+                showToast('Commentaire supprimé.', 'success');
+            });
+        });
+    }
+}
+
+/**
+ * Ouverture du lecteur au clic (délégation : évite les soucis de sélecteur CSS / slug et les re-rendus).
+ */
+function initArticleListClickDelegation() {
+    const list = document.getElementById('articlesList');
+    if (!list || list.dataset.articleDelegationBound === '1') return;
+    list.dataset.articleDelegationBound = '1';
+    list.addEventListener('click', function (e) {
+        const a = e.target.closest('a.article-link-internal[data-article-slug]');
+        if (!a || !list.contains(a)) return;
+        e.preventDefault();
+        const slugAttr = a.getAttribute('data-article-slug');
+        if (!slugAttr || !Array.isArray(currentArticlesData)) return;
+        const normalized = normalizeArticleSlug(slugAttr);
+        const article = currentArticlesData.find(function (art) {
+            return getArticleCanonicalSlug(art) === normalized;
+        });
+        if (!article || !getArticleInternalBody(article)) return;
+        openArticleReaderModal(article, true);
+    });
+}
+
+function openArticleReaderModal(article, pushHistory) {
+    const page = document.getElementById('articlePageSection');
+    const titleEl = document.getElementById('articleReaderTitle');
+    const dateEl = document.getElementById('articleReaderDate');
+    const bodyEl = document.getElementById('articleReaderBody');
+    const shareBtn = document.getElementById('articleReaderShareBtn');
+    const shareLinkEl = document.getElementById('articleReaderShareLink');
+    const closeBtn = document.getElementById('articleReaderClose');
+    if (!page || !titleEl || !bodyEl) return;
+    articleReaderReturnFocus = document.activeElement;
+    titleEl.textContent = article.title || '';
+    const dateText = article.date ? formatDate(article.date) : '';
+    const authorText = article.author ? ('Par ' + article.author) : '';
+    dateEl.textContent = [dateText, authorText].filter(Boolean).join(' - ');
+    const img = article.image
+        ? `<img src="${escapeAttr(article.image)}" alt="${escapeAttr(article.title || 'Article')}" class="article-cover-image" decoding="async" fetchpriority="high">`
+        : '';
+    bodyEl.innerHTML = `${img}${articleContentHtml(article)}`;
+    const shareUrl = getArticleShareUrl(article);
+    if (shareBtn) shareBtn.setAttribute('data-share-url', shareUrl);
+    if (shareLinkEl) shareLinkEl.value = shareUrl;
+    currentReaderArticleSlug = getArticleCanonicalSlug(article);
+    renderReaderEngagement(currentReaderArticleSlug);
+    setArticleReaderPageOpen(true);
+    if (pushHistory) {
+        history.pushState({ articleSlug: getArticleCanonicalSlug(article) }, '', shareUrl);
+    }
+    if (closeBtn) closeBtn.focus();
+}
+
+function closeArticleReaderModal(popHistory) {
+    const page = document.getElementById('articlePageSection');
+    if (!page || page.style.display === 'none') return;
+    setArticleReaderPageOpen(false);
+    const bodyEl = document.getElementById('articleReaderBody');
+    if (bodyEl) bodyEl.innerHTML = '';
+    currentReaderArticleSlug = null;
+    if (popHistory) {
+        const url = new URL(window.location.href);
+        if (url.searchParams.has('article')) {
+            url.searchParams.delete('article');
+            history.pushState({}, '', url.pathname + (url.search ? '?' + url.searchParams.toString() : '') + url.hash);
+        }
+    }
+    const ref = articleReaderReturnFocus;
+    articleReaderReturnFocus = null;
+    if (ref && typeof ref.focus === 'function') {
+        try { ref.focus(); } catch (e) { /* ignore */ }
+    }
+}
+
+function tryOpenArticleFromUrl() {
+    const raw = new URL(window.location.href).searchParams.get('article');
+    if (!raw || !Array.isArray(currentArticlesData) || currentArticlesData.length === 0) return;
+    const normalized = normalizeArticleSlug(raw);
+    let match = currentArticlesData.find(function (a) {
+        return getArticleCanonicalSlug(a) === normalized;
+    });
+    if (!match) {
+        match = currentArticlesData.find(function (a) {
+            return slugifyArticleTitle(a.title || '') === normalized;
+        });
+    }
+    if (match && getArticleInternalBody(match)) {
+        openArticleReaderModal(match, false);
+    } else {
+        setArticleReaderPageOpen(false);
+    }
+}
+
+function projectTechIconClass(tech) {
+    const t = String(tech).toLowerCase();
+    if (t.includes('react')) return 'fab fa-react';
+    if (t.includes('vue')) return 'fab fa-vuejs';
+    if (t.includes('angular')) return 'fab fa-angular';
+    if (t.includes('node')) return 'fab fa-node-js';
+    if (t.includes('python')) return 'fab fa-python';
+    if (t.includes('figma')) return 'fab fa-figma';
+    if (t.includes('html')) return 'fab fa-html5';
+    if (t.includes('css') || t.includes('tailwind')) return 'fab fa-css3-alt';
+    if (t.includes('javascript') || t === 'js') return 'fab fa-js';
+    if (t.includes('typescript') || t === 'ts') return 'fas fa-code';
+    if (t.includes('vite')) return 'fas fa-bolt';
+    if (t.includes('shadcn')) return 'fas fa-cubes';
+    if (t.includes('cardano')) return 'fas fa-coins';
+    if (t.includes('supabase')) return 'fas fa-database';
+    if (t.includes('github')) return 'fab fa-github';
+    if (t.includes('git') && !t.includes('github')) return 'fab fa-git-alt';
+    return 'fas fa-layer-group';
+}
+
+function createProjectCard(project, projectIndex) {
     const card = document.createElement('div');
     card.className = 'project-card';
-    
-    const loadMoreText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.loadMore) ? translations[currentLang].projects.loadMore : 'Charger plus';
-    const loadLessText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.loadLess) ? translations[currentLang].projects.loadLess : 'Charger moins';
+
+    const titleSafe = escapeHtml(project.title);
+    const imgSrc = project.image ? escapeAttr(project.image) : '';
 
     let imageHTML = '<div class="project-image-wrap">';
     if (project.image) {
-        imageHTML += `<img src="${project.image}" alt="${project.title}" class="project-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
+        imageHTML += `<img src="${imgSrc}" alt="${titleSafe}" class="project-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">`;
     }
     imageHTML += `
         <div class="project-image-placeholder" style="display: ${project.image ? 'none' : 'flex'};">
             <i class="fas fa-code"></i>
         </div>
     </div>`;
-    
+
     const technologies = Array.isArray(project.technologies) ? project.technologies : [];
-    const techTags = technologies
-        .map(tech => `<span class="tech-tag">${tech}</span>`)
+    const techItems = technologies
+        .map(tech => {
+            const techSafe = escapeHtml(tech);
+            const iconClass = projectTechIconClass(tech);
+            return `<span class="project-tech-item"><i class="${iconClass}" aria-hidden="true"></i><span>${techSafe}</span></span>`;
+        })
         .join('');
-    
-    const cardanoBadge = project.cardano 
-        ? '<span class="cardano-badge"><i class="fas fa-coins"></i> Cardano</span>' 
-        : '';
-    
-    const codeText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.viewCode) 
-        ? translations[currentLang].projects.viewCode 
-        : 'Code';
-    const demoText = (translations[currentLang] && translations[currentLang].projects && translations[currentLang].projects.viewDemo) 
-        ? translations[currentLang].projects.viewDemo 
-        : 'Démo';
-    let linksHTML = '';
-    if (project.github) {
-        linksHTML += `
-            <a href="${project.github}" target="_blank" rel="noopener" class="project-link">
-                <i class="fab fa-github"></i> ${codeText}
-            </a>
-        `;
+
+    const t = translations[currentLang] && translations[currentLang].projects ? translations[currentLang].projects : {};
+    const codeText = t.viewCode || 'Code';
+    const visitText = t.visit || t.viewDemo || 'Visiter';
+    const descriptionBtnText = t.descriptionBtn || 'Résumé';
+
+    const hasDemo = !!(project.demo && String(project.demo).trim());
+    const hasGh = !!(project.github && String(project.github).trim());
+    const primaryUrl = hasDemo ? project.demo : (hasGh ? project.github : '');
+    const primaryLabel = hasDemo ? visitText : (hasGh ? codeText : '');
+    const hasAbout = !!(project.about && String(project.about).trim());
+    const aboutUrlRaw = hasAbout ? String(project.about).trim() : '';
+    const aboutEsc = hasAbout ? escapeAttr(aboutUrlRaw) : '';
+    const presentationLabel = escapeHtml(t.viewPresentation || 'Présentation');
+    const githubUnavailableTip = escapeAttr(t.githubUnavailable || 'Dépôt GitHub non communiqué');
+
+    const rawContrib = resolveProjectTextField(project, 'contributions');
+    const contribBodyHtml = rawContrib ? formatDescriptionAsParagraphs(rawContrib) : '';
+    const rawDesc = resolveProjectTextField(project, 'description');
+    const descBodyHtml = rawDesc ? formatDescriptionAsParagraphs(rawDesc) : '';
+    const hasOverviewContent = !!(rawContrib || rawDesc);
+
+    let githubSlot = '';
+    if (hasGh) {
+        githubSlot = `<a href="${escapeAttr(project.github)}" target="_blank" rel="noopener noreferrer" class="project-github-mini" aria-label="${escapeAttr(codeText)}"><i class="fab fa-github"></i></a>`;
+    } else if (hasDemo && !hasGh) {
+        githubSlot = `<span class="project-github-mini project-github-mini--disabled" role="img" aria-label="${githubUnavailableTip}" title="${githubUnavailableTip}"><i class="fab fa-github" aria-hidden="true"></i></span>`;
     }
-    if (project.demo) {
-        linksHTML += `
-            <a href="${project.demo}" target="_blank" rel="noopener" class="project-link secondary">
-                <i class="fas fa-external-link-alt"></i> ${demoText}
-            </a>
-        `;
+
+    let presentationSlot = '';
+    if (hasAbout) {
+        presentationSlot = `<a href="${aboutEsc}" target="_blank" rel="noopener noreferrer" class="project-presentation-btn">
+                    <span>${presentationLabel}</span>
+                    <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                </a>`;
     }
-    
-    const descriptionHtml = formatDescriptionAsParagraphs(project.description);
-    const isLongDescription = (project.description || '').length > PROJECT_DESCRIPTION_COLLAPSE_CHARS;
-    const descriptionWrapHTML = isLongDescription
-        ? `<div class="project-description-wrap">
-            <div class="project-description description-block project-description--collapsed">${descriptionHtml}</div>
-            <button type="button" class="project-description-toggle" aria-expanded="false">
-                <i class="fas fa-chevron-down"></i> <span class="project-description-toggle-text">${loadMoreText}</span>
-            </button>
-           </div>`
-        : `<div class="project-description-wrap">
-            <div class="project-description description-block">${descriptionHtml}</div>
-           </div>`;
+
+    let visitSlot = '';
+    if (primaryUrl) {
+        const hrefEsc = escapeAttr(primaryUrl);
+        visitSlot = `<a href="${hrefEsc}" target="_blank" rel="noopener noreferrer" class="project-visit-btn">
+                    <span>${escapeHtml(primaryLabel)}</span>
+                    <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+                </a>`;
+    }
+
+    let actionsHTML = '';
+    if (githubSlot || presentationSlot || visitSlot) {
+        actionsHTML = `${githubSlot}${presentationSlot}${visitSlot}`;
+    }
+
+    let footerHTML = '';
+    if (hasOverviewContent || actionsHTML) {
+        const descBtn = hasOverviewContent
+            ? `<button type="button" class="project-desc-toggle" aria-haspopup="dialog">
+                    <i class="fas fa-align-left" aria-hidden="true"></i>
+                    <span>${escapeHtml(descriptionBtnText)}</span>
+                </button>`
+            : '';
+
+        const innerFooter = `${descBtn}${descBtn && actionsHTML ? '<span class="project-card-footer-grow" aria-hidden="true"></span>' : ''}${!descBtn && actionsHTML ? '<span class="project-card-footer-grow" aria-hidden="true"></span>' : ''}${actionsHTML ? `<div class="project-card-footer-actions">${actionsHTML}</div>` : ''}`;
+
+        footerHTML = `
+            <div class="project-card-footer-wrap">
+                <div class="project-card-footer">${innerFooter}</div>
+            </div>`;
+    }
 
     card.innerHTML = `
         ${imageHTML}
         <div class="project-content">
-            <h3 class="project-title">
-                ${project.title}
-                ${cardanoBadge}
-            </h3>
-            ${descriptionWrapHTML}
-            <div class="project-tech">${techTags}</div>
-            <div class="project-links">${linksHTML}</div>
+            <h3 class="project-title">${titleSafe}</h3>
+            <div class="project-tech-row">${techItems}</div>
+            ${footerHTML}
         </div>
     `;
+    if (Number.isFinite(projectIndex)) {
+        card.insertAdjacentHTML('beforeend', `
+            <button type="button" class="inline-edit-btn admin-only" data-entity="project" data-index="${projectIndex}" style="display:none;">
+                <i class="fas fa-pen"></i>
+            </button>
+        `);
+    }
 
-    if (isLongDescription) {
-        const descEl = card.querySelector('.project-description');
-        const btn = card.querySelector('.project-description-toggle');
-        const toggleText = card.querySelector('.project-description-toggle-text');
-        btn.addEventListener('click', function(e) {
+    const descToggle = card.querySelector('.project-desc-toggle');
+    if (descToggle && hasOverviewContent) {
+        descToggle.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            const expanded = descEl.classList.toggle('project-description--collapsed');
-            btn.classList.toggle('expanded', !expanded);
-            btn.setAttribute('aria-expanded', !expanded);
-            toggleText.textContent = expanded ? loadMoreText : loadLessText;
+            openProjectDescriptionModal(project.title, contribBodyHtml, descBodyHtml, project.contributionsTitle);
         });
     }
-    
+
     return card;
 }
 
@@ -626,8 +1691,9 @@ function renderExperiencesPage(page) {
     const slice = all.slice(start, start + ITEMS_PER_PAGE);
 
     listEl.innerHTML = '';
-    slice.forEach(exp => listEl.appendChild(createExperienceItem(exp)));
+    slice.forEach((exp, i) => listEl.appendChild(createExperienceItem(exp, start + i)));
     listEl.dataset.currentPage = String(currentPage);
+    refreshAdminOnlyVisibility();
 
     const container = listEl.parentNode;
     let paginationWrap = document.getElementById('experiencesPagination');
@@ -684,16 +1750,32 @@ async function loadExperiences() {
     const listEl = document.getElementById('experiencesList');
     if (!listEl) return;
     try {
-        let fromFile = [];
-        try {
-            const response = await fetch('experiences.json');
-            if (response.ok) fromFile = await response.json();
-        } catch (e) {
-            console.warn('experiences.json non disponible.');
+        let all = [];
+        let usedSupabase = false;
+        if (typeof window.fetchPortfolioBody === 'function') {
+            try {
+                const remote = await window.fetchPortfolioBody('experiences');
+                if (Array.isArray(remote) && remote.length > 0) {
+                    all = remote;
+                    usedSupabase = true;
+                }
+            } catch (e) {
+                console.warn('Lecture Supabase experiences:', e);
+            }
         }
-        const local = getLocalExperiences();
-        const all = [...local, ...fromFile];
+        if (!usedSupabase) {
+            let fromFile = [];
+            try {
+                const response = await fetch('experiences.json');
+                if (response.ok) fromFile = await response.json();
+            } catch (e) {
+                console.warn('experiences.json non disponible.');
+            }
+            const local = getLocalExperiences();
+            all = [...local, ...fromFile];
+        }
         if (all.length === 0) {
+            currentExperiencesData = [];
             const msg = (translations[currentLang] && translations[currentLang].experiences && translations[currentLang].experiences.noExperiences)
                 ? translations[currentLang].experiences.noExperiences
                 : 'Aucune expérience renseignée pour le moment.';
@@ -701,8 +1783,10 @@ async function loadExperiences() {
             listEl._allData = null;
             return;
         }
+        currentExperiencesData = all.map(function (e) { return { ...e }; });
         listEl._allData = all;
         renderExperiencesPage(1);
+        refreshAdminOnlyVisibility();
     } catch (err) {
         console.error('Erreur chargement expériences:', err);
         listEl.innerHTML = '<p class="loading">Erreur lors du chargement des expériences.</p>';
@@ -756,7 +1840,7 @@ function exportExperiences() {
 /**
  * Crée un élément DOM pour une expérience
  */
-function createExperienceItem(exp) {
+function createExperienceItem(exp, expIndex) {
     const item = document.createElement('div');
     item.className = 'experience-item';
     const period = exp.period ? `<p class="experience-period"><i class="fas fa-calendar-alt"></i> ${exp.period}</p>` : '';
@@ -773,6 +1857,13 @@ function createExperienceItem(exp) {
         <div class="experience-description description-block">${descriptionHtml}</div>
         ${link}
     `;
+    if (Number.isFinite(expIndex)) {
+        item.insertAdjacentHTML('beforeend', `
+            <button type="button" class="inline-edit-btn admin-only" data-entity="experience" data-index="${expIndex}" style="display:none;">
+                <i class="fas fa-pen"></i>
+            </button>
+        `);
+    }
     return item;
 }
 
@@ -786,15 +1877,19 @@ function createExperienceItem(exp) {
 function renderArticlesPage(page) {
     const listEl = document.getElementById('articlesList');
     if (!listEl || !listEl._allData) return;
-    const all = listEl._allData;
+    const all = listEl._filteredData || listEl._allData;
     const totalPages = Math.max(1, Math.ceil(all.length / ITEMS_PER_PAGE));
     const currentPage = Math.min(Math.max(1, page), totalPages);
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     const slice = all.slice(start, start + ITEMS_PER_PAGE);
 
     listEl.innerHTML = '';
-    slice.forEach(article => listEl.appendChild(createArticleItem(article)));
+    slice.forEach((article) => {
+        const dataIndex = getArticleDataIndex(article, listEl._allData);
+        listEl.appendChild(createArticleItem(article, dataIndex));
+    });
     listEl.dataset.currentPage = String(currentPage);
+    refreshAdminOnlyVisibility();
 
     const container = listEl.parentNode;
     let paginationWrap = document.getElementById('articlesPagination');
@@ -854,13 +1949,29 @@ async function loadArticles() {
         return;
     }
     try {
-        const response = await fetch('articles.json');
-        let jsonArticles = [];
-        if (response.ok) jsonArticles = await response.json();
-        const localArticles = getLocalArticles();
-        const allArticles = [...localArticles, ...jsonArticles];
+        let allArticles = [];
+        let usedSupabase = false;
+        if (typeof window.fetchPortfolioBody === 'function') {
+            try {
+                const remote = await window.fetchPortfolioBody('articles');
+                if (Array.isArray(remote) && remote.length > 0) {
+                    allArticles = mergeArticleListsPreferLocal(getLocalArticles(), remote);
+                    usedSupabase = true;
+                }
+            } catch (e) {
+                console.warn('Lecture Supabase articles:', e);
+            }
+        }
+        if (!usedSupabase) {
+            const response = await fetch('articles.json');
+            let jsonArticles = [];
+            if (response.ok) jsonArticles = await response.json();
+            const localArticles = getLocalArticles();
+            allArticles = [...localArticles, ...jsonArticles];
+        }
 
         if (allArticles.length === 0) {
+            currentArticlesData = [];
             const noArticlesText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.noArticles)
                 ? translations[currentLang].articles.noArticles
                 : 'Aucun article disponible pour le moment.';
@@ -868,8 +1979,19 @@ async function loadArticles() {
             articlesList._allData = null;
             return;
         }
-        articlesList._allData = allArticles;
-        renderArticlesPage(1);
+        currentArticlesData = allArticles.map(function (a) {
+            const clone = { ...a };
+            clone.slug = getArticleCanonicalSlug(clone);
+            const bodyText = getArticleInternalBody(clone);
+            if (!clone.content && bodyText) clone.content = bodyText;
+            if (!clone.type) clone.type = bodyText ? 'direct' : 'external';
+            clone.category = normalizeArticleCategory(clone.category);
+            return clone;
+        }).sort(sortArticlesByPublicationDateDesc);
+        articlesList._allData = currentArticlesData;
+        applyArticleFiltersAndRender(1);
+        refreshAdminOnlyVisibility();
+        tryOpenArticleFromUrl();
     } catch (error) {
         console.error('Erreur lors du chargement des articles:', error);
         articlesList.innerHTML = `
@@ -892,6 +2014,137 @@ function getLocalArticles() {
         console.error('Erreur lors de la lecture des articles locaux:', error);
         return [];
     }
+}
+
+function setLocalArticles(articles) {
+    localStorage.setItem('portfolio-articles', JSON.stringify(Array.isArray(articles) ? articles : []));
+}
+
+function ensureArticlesEditableSnapshot() {
+    if (!Array.isArray(currentArticlesData) || currentArticlesData.length === 0) return;
+    setLocalArticles(currentArticlesData);
+}
+
+function normalizeArticleCategory(category) {
+    return String(category || '').trim();
+}
+
+function ensureArticleCategoryOption(value) {
+    const select = document.getElementById('articleCategory');
+    const normalized = normalizeArticleCategory(value);
+    if (!select || !normalized) return;
+    const exists = Array.from(select.options).some(function (opt) {
+        return normalizeArticleCategory(opt.value).toLowerCase() === normalized.toLowerCase();
+    });
+    if (!exists) {
+        const option = document.createElement('option');
+        option.value = normalized;
+        option.textContent = normalized;
+        select.appendChild(option);
+    }
+}
+
+function setupArticleCategorySelect(selectedValue) {
+    const select = document.getElementById('articleCategory');
+    if (!select) return;
+    const current = normalizeArticleCategory(selectedValue);
+    const options = ['<option value="">Sélectionner une catégorie</option>'].concat(
+        ARTICLE_CATEGORIES.map(function (cat) {
+            const selected = current && current.toLowerCase() === cat.toLowerCase() ? ' selected' : '';
+            return `<option value="${escapeAttr(cat)}"${selected}>${escapeHtml(cat)}</option>`;
+        })
+    );
+    select.innerHTML = options.join('');
+    if (current) {
+        ensureArticleCategoryOption(current);
+        select.value = current;
+    }
+}
+
+function sortArticlesByPublicationDateDesc(a, b) {
+    const tsA = Date.parse(a && a.date ? a.date : '');
+    const tsB = Date.parse(b && b.date ? b.date : '');
+    const safeA = Number.isFinite(tsA) ? tsA : 0;
+    const safeB = Number.isFinite(tsB) ? tsB : 0;
+    if (safeB !== safeA) return safeB - safeA;
+    return String((b && b.title) || '').localeCompare(String((a && a.title) || ''), 'fr');
+}
+
+function initArticleFilters() {
+    const searchInput = document.getElementById('articleSearchInput');
+    const categorySelect = document.getElementById('articleCategoryFilter');
+    if (searchInput) {
+        searchInput.addEventListener('input', function () {
+            articleFilterState.query = String(searchInput.value || '').trim().toLowerCase();
+            applyArticleFiltersAndRender(1);
+        });
+    }
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function () {
+            articleFilterState.category = String(categorySelect.value || '').trim().toLowerCase();
+            applyArticleFiltersAndRender(1);
+        });
+    }
+}
+
+function applyArticleFiltersAndRender(page) {
+    const listEl = document.getElementById('articlesList');
+    if (!listEl || !Array.isArray(listEl._allData)) return;
+    const query = articleFilterState.query;
+    const selectedCategory = articleFilterState.category;
+    const filtered = listEl._allData.filter(function (article) {
+        const category = normalizeArticleCategory(article.category).toLowerCase();
+        if (selectedCategory && category !== selectedCategory) return false;
+        if (!query) return true;
+        const text = [
+            article.title,
+            article.author,
+            article.category,
+            article.description,
+            getArticleInternalBody(article)
+        ].map(function (v) { return String(v || '').toLowerCase(); }).join(' ');
+        return text.indexOf(query) !== -1;
+    });
+    listEl._filteredData = filtered;
+    buildArticleCategoryFilter(listEl._allData);
+    if (filtered.length === 0) {
+        const noArticlesText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.noArticles)
+            ? translations[currentLang].articles.noArticles
+            : 'Aucun article disponible pour le moment.';
+        listEl.innerHTML = `<p class="loading">${noArticlesText}</p>`;
+        const paginationWrap = document.getElementById('articlesPagination');
+        if (paginationWrap && paginationWrap.parentNode) paginationWrap.parentNode.removeChild(paginationWrap);
+        return;
+    }
+    renderArticlesPage(page || 1);
+}
+
+function buildArticleCategoryFilter(allArticles) {
+    const select = document.getElementById('articleCategoryFilter');
+    if (!select) return;
+    const categories = Array.from(new Set((allArticles || [])
+        .map(function (a) { return normalizeArticleCategory(a.category); })
+        .filter(Boolean)))
+        .sort(function (a, b) { return a.localeCompare(b, 'fr'); });
+    const current = articleFilterState.category;
+    const options = ['<option value="">Toutes les catégories</option>']
+        .concat(categories.map(function (cat) {
+            const value = escapeAttr(cat.toLowerCase());
+            const label = escapeHtml(cat);
+            const selected = current && current === cat.toLowerCase() ? ' selected' : '';
+            return `<option value="${value}"${selected}>${label}</option>`;
+        }));
+    select.innerHTML = options.join('');
+}
+
+function getArticleDataIndex(article, allArticles) {
+    if (!Array.isArray(allArticles) || !article) return -1;
+    const targetSlug = getArticleCanonicalSlug(article);
+    const idxBySlug = allArticles.findIndex(function (a) {
+        return getArticleCanonicalSlug(a) === targetSlug;
+    });
+    if (idxBySlug >= 0) return idxBySlug;
+    return allArticles.findIndex(function (a) { return a === article; });
 }
 
 /**
@@ -953,23 +2206,44 @@ function exportArticles() {
  * @param {Object} article - Données de l'article
  * @returns {HTMLElement} - Élément HTML de l'article
  */
-function createArticleItem(article) {
+function createArticleItem(article, articleIndex) {
     const item = document.createElement('div');
     item.className = 'article-item';
     
     const readArticleText = (translations[currentLang] && translations[currentLang].articles && translations[currentLang].articles.readArticle) 
         ? translations[currentLang].articles.readArticle 
         : 'Lire l\'article';
-    const descriptionHtml = formatDescriptionAsParagraphs(article.description);
+    const hasInternalContent = !!getArticleInternalBody(article);
+    const articleUrl = hasInternalContent ? getArticleShareUrl(article) : (article.link || '#');
+    const linkAttrs = hasInternalContent
+        ? `href="${articleUrl}" class="article-link article-link-internal" data-article-slug="${escapeAttr(getArticleCanonicalSlug(article))}"`
+        : `href="${article.link}" target="_blank" rel="noopener" class="article-link"`;
+    const authorLine = article.author ? `<p class="description-para"><strong>Par ${escapeHtml(article.author)}</strong></p>` : '';
+    const categoryLine = article.category ? `<span class="article-tool-tag">${escapeHtml(article.category)}</span>` : '';
+    const externalDescription = (article.type === 'external' && article.description)
+        ? `<p class="description-para">${escapeHtml(article.description)}</p>`
+        : '';
+    /* Pas de couverture dans la liste : l’image ne charge qu’à l’ouverture du lecteur (openArticleReaderModal). */
     item.innerHTML = `
         <h3 class="article-title">
-            <a href="${article.link}" target="_blank" rel="noopener">${article.title}</a>
+            <a href="${articleUrl}" ${hasInternalContent ? `data-article-slug="${escapeAttr(getArticleCanonicalSlug(article))}"` : 'target="_blank" rel="noopener"'}>${article.title}</a>
         </h3>
-        <div class="article-description description-block">${descriptionHtml}</div>
-        <a href="${article.link}" target="_blank" rel="noopener" class="article-link">
+        ${categoryLine ? `<div class="article-tools">${categoryLine}</div>` : ''}
+        <div class="article-description description-block">${authorLine}${externalDescription}</div>
+        <a ${linkAttrs}>
             ${readArticleText} <i class="fas fa-arrow-right"></i>
         </a>
     `;
+    if (Number.isFinite(articleIndex)) {
+        item.insertAdjacentHTML('beforeend', `
+            <button type="button" class="inline-edit-btn admin-only" data-entity="article" data-index="${articleIndex}" style="display:none;">
+                <i class="fas fa-pen"></i>
+            </button>
+            <button type="button" class="inline-edit-btn inline-delete-btn admin-only" data-entity="article-delete" data-index="${articleIndex}" style="display:none;">
+                <i class="fas fa-trash"></i>
+            </button>
+        `);
+    }
     
     return item;
 }
@@ -1180,6 +2454,101 @@ function formatDate(dateString) {
 // CHARGEMENT DES COMPÉTENCES
 // ============================================
 
+function createEmptySkillsData() {
+    return {
+        frontend: [],
+        backend: [],
+        blockchain: [],
+        tools: [],
+        certifications: []
+    };
+}
+
+function cloneSkillsData(data) {
+    const normalized = normalizeSkillsData(data);
+    const out = createEmptySkillsData();
+    SKILL_CATEGORIES.forEach(function (cat) {
+        out[cat] = normalized[cat].map(function (item) { return { ...item }; });
+    });
+    return out;
+}
+
+function hasAnySkills(data) {
+    const normalized = normalizeSkillsData(data);
+    return SKILL_CATEGORIES.some(function (cat) {
+        return normalized[cat].length > 0;
+    });
+}
+
+function normalizeSkillsData(raw) {
+    const base = createEmptySkillsData();
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return base;
+    SKILL_CATEGORIES.forEach(function (cat) {
+        base[cat] = Array.isArray(raw[cat]) ? raw[cat] : [];
+    });
+    return base;
+}
+
+function getLocalSkills() {
+    try {
+        const stored = localStorage.getItem(SKILLS_STORAGE_KEY);
+        if (!stored) return createEmptySkillsData();
+        return normalizeSkillsData(JSON.parse(stored));
+    } catch (e) {
+        return createEmptySkillsData();
+    }
+}
+
+function setLocalSkills(data) {
+    localStorage.setItem(SKILLS_STORAGE_KEY, JSON.stringify(normalizeSkillsData(data)));
+}
+
+function clearLocalSkills() {
+    localStorage.removeItem(SKILLS_STORAGE_KEY);
+}
+
+function saveLocalSkillEntry(category, skill) {
+    const all = getLocalSkills();
+    if (!SKILL_CATEGORIES.includes(category)) return;
+    all[category].push(skill);
+    setLocalSkills(all);
+}
+
+function ensureSkillsEditableSnapshot() {
+    const local = getLocalSkills();
+    if (hasAnySkills(local)) {
+        currentSkillsData = cloneSkillsData(local);
+        return currentSkillsData;
+    }
+    const seeded = cloneSkillsData(currentSkillsData);
+    if (hasAnySkills(seeded)) {
+        setLocalSkills(seeded);
+    }
+    return seeded;
+}
+
+function exportSkills() {
+    mergeSkillsFromSources()
+        .then(function (all) {
+            const blob = new Blob([JSON.stringify(all, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'skills.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        })
+        .catch(function () {
+            const blob = new Blob([JSON.stringify(getLocalSkills(), null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'skills.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+}
+
 /**
  * Charge les compétences depuis skills.json et les affiche avec des barres de progression
  */
@@ -1193,12 +2562,24 @@ async function loadSkills() {
     };
     
     try {
-        const response = await fetch('skills.json');
-        if (!response.ok) {
-            throw new Error('Impossible de charger les compétences');
+        let skillsData = null;
+        let usedSupabase = false;
+        if (typeof window.fetchPortfolioBody === 'function') {
+            try {
+                const remote = await window.fetchPortfolioBody('skills');
+                if (remote && typeof remote === 'object' && !Array.isArray(remote)) {
+                    skillsData = normalizeSkillsData(remote);
+                    usedSupabase = true;
+                }
+            } catch (e) {
+                console.warn('Lecture Supabase skills:', e);
+            }
         }
-        
-        const skillsData = await response.json();
+        if (!usedSupabase) {
+            skillsData = await mergeSkillsFromSources();
+        }
+        skillsData = normalizeSkillsData(skillsData);
+        currentSkillsData = cloneSkillsData(skillsData);
         
         // Charger chaque catégorie
         for (const [elementId, categoryKey] of Object.entries(skillCategories)) {
@@ -1212,11 +2593,20 @@ async function loadSkills() {
             }
             
             container.innerHTML = '';
-            skills.forEach(skill => {
+            skills.forEach((skill, index) => {
                 const skillElement = createSkillItem(skill);
-                container.appendChild(skillElement);
+                const wrap = document.createElement('div');
+                wrap.className = 'skill-admin-wrap';
+                wrap.appendChild(skillElement);
+                wrap.insertAdjacentHTML('beforeend', `
+                    <button type="button" class="inline-edit-btn inline-edit-btn--skill admin-only" data-entity="skill" data-category="${categoryKey}" data-index="${index}" style="display:none;">
+                        <i class="fas fa-pen"></i>
+                    </button>
+                `);
+                container.appendChild(wrap);
             });
         }
+        refreshAdminOnlyVisibility();
         
     } catch (error) {
         console.error('Erreur lors du chargement des compétences:', error);
@@ -1231,15 +2621,18 @@ async function loadSkills() {
 }
 
 /**
- * Crée un élément de compétence avec pourcentage ; si skill.link est défini, toute la carte est cliquable (ouverture dans un nouvel onglet).
+ * Crée un élément de compétence premium (sans pourcentage affiché) ; si skill.link est défini, toute la carte est cliquable.
  * @param {Object} skill - Données de la compétence (name, icon, level, link?)
  * @returns {HTMLElement} - Élément HTML de la compétence (a ou div)
  */
 function createSkillItem(skill) {
     const hasLink = skill.link && typeof skill.link === 'string' && skill.link.trim() !== '';
+    const isCertified = !!skill.certification;
+    const safeLevel = Number.isFinite(Number(skill.level)) ? Math.max(0, Math.min(100, Number(skill.level))) : 0;
     const tag = hasLink ? 'a' : 'div';
     const skillItem = document.createElement(tag);
-    skillItem.className = 'skill-item' + (hasLink ? ' skill-item--link' : '');
+    skillItem.className = 'skill-item' + (hasLink ? ' skill-item--link' : '') + (isCertified ? ' skill-item--certified' : '');
+    skillItem.style.setProperty('--skill-level', safeLevel + '%');
     if (hasLink) {
         skillItem.href = skill.link.trim();
         skillItem.target = '_blank';
@@ -1247,11 +2640,12 @@ function createSkillItem(skill) {
         skillItem.setAttribute('title', 'Ouvrir ' + skill.name);
     }
     const certifiedText = (translations[currentLang] && translations[currentLang].skills && translations[currentLang].skills.certified) ? translations[currentLang].skills.certified : 'Certifié';
-    const badgeText = skill.certification ? certifiedText : (skill.level + '%');
+    const badgeText = isCertified ? certifiedText : '';
     skillItem.innerHTML = `
         <span class="skill-item-icon"><i class="${skill.icon}" aria-hidden="true"></i></span>
         <span class="skill-name">${skill.name}</span>
-        <span class="skill-percentage">${badgeText}</span>
+        <span class="skill-meter" aria-hidden="true"><span class="skill-meter-fill"></span></span>
+        ${isCertified ? `<span class="skill-badge">${badgeText}</span>` : ''}
         ${hasLink ? '<i class="fas fa-external-link-alt skill-item-external" aria-hidden="true"></i>' : ''}
     `;
     return skillItem;
@@ -1267,7 +2661,7 @@ function createSkillItem(skill) {
  */
 function initScrollAnimations() {
     // Sélectionner tous les éléments à animer
-    const animatedElements = document.querySelectorAll('.section, .skill-category, .project-card, .article-item, .experience-item');
+    const animatedElements = document.querySelectorAll('.section, .skill-category, .project-card, .article-item, .experience-item, .service-card');
     
     
     // Créer un Intersection Observer pour détecter quand les éléments entrent dans la vue
@@ -1284,6 +2678,8 @@ function initScrollAnimations() {
                         entry.target.style.animation = 'fadeInScale 0.6s ease forwards';
                     } else if (entry.target.classList.contains('project-card')) {
                         entry.target.style.animation = `zoomIn 0.6s ease forwards ${index * 0.1}s`;
+                    } else if (entry.target.classList.contains('service-card')) {
+                        entry.target.style.animation = `fadeInUp 0.55s ease forwards ${index * 0.05}s`;
                     } else if (entry.target.classList.contains('article-item')) {
                         const isEven = Array.from(entry.target.parentElement.children).indexOf(entry.target) % 2 === 0;
                         entry.target.style.animation = isEven 
@@ -1333,6 +2729,96 @@ function initScrollAnimations() {
 // SYSTÈME DE TRADUCTION
 // ============================================
 // Les variables translations et currentLang sont déjà déclarées en haut du fichier
+
+/**
+ * Phrases du sous-titre hero (rotation une ligne à la fois).
+ * @param {string} lang
+ * @returns {string[]}
+ */
+function getHeroSubtitleRotate(lang) {
+    const pack = translations[lang];
+    const rotate = pack && pack.hero && pack.hero.subtitleRotate;
+    if (!Array.isArray(rotate) || !rotate.length) {
+        return [];
+    }
+    return rotate.filter(function(p) {
+        return typeof p === 'string' && p.trim().length;
+    });
+}
+
+function stopHeroTypewriter() {
+    if (heroTypewriterTimerId !== null) {
+        clearTimeout(heroTypewriterTimerId);
+        heroTypewriterTimerId = null;
+    }
+    if (heroRotateDelayId !== null) {
+        clearTimeout(heroRotateDelayId);
+        heroRotateDelayId = null;
+    }
+}
+
+/**
+ * Machine à écrire + rotation continue : chaque phrase sur une seule ligne, puis pause puis suivante.
+ */
+function startHeroTypewriter(lang) {
+    const el = document.getElementById('heroTypewriter');
+    if (!el) return;
+    stopHeroTypewriter();
+
+    const phrases = getHeroSubtitleRotate(lang);
+    el.setAttribute('aria-label', phrases.join(' — '));
+    el.classList.remove('hero-typewriter--final');
+    el.replaceChildren();
+
+    if (!phrases.length) {
+        return;
+    }
+
+    let phraseIndex = 0;
+    const stepMs = 175;
+
+    function scheduleNextPhrase() {
+        heroRotateDelayId = setTimeout(function() {
+            heroRotateDelayId = null;
+            phraseIndex = (phraseIndex + 1) % phrases.length;
+            el.classList.remove('hero-typewriter--final');
+            el.replaceChildren();
+            beginPhraseTypewriter(phrases[phraseIndex]);
+        }, HERO_ROTATE_PAUSE_MS);
+    }
+
+    function beginPhraseTypewriter(full) {
+        const cursorEl = document.createElement('span');
+        cursorEl.className = 'hero-role-cursor';
+        cursorEl.setAttribute('aria-hidden', 'true');
+        el.appendChild(cursorEl);
+        syncHeroRoleLineToNameWidthSoon();
+
+        const chars = Array.from(full);
+        let i = 0;
+
+        function tick() {
+            if (i >= chars.length) {
+                heroTypewriterTimerId = null;
+                finalizeHeroTypewriterPlainText(el, full);
+                syncHeroRoleLineToNameWidthSoon();
+                scheduleNextPhrase();
+                return;
+            }
+            const span = document.createElement('span');
+            span.className = 'hero-typewriter-char';
+            span.setAttribute('aria-hidden', 'true');
+            span.textContent = chars[i];
+            el.insertBefore(span, cursorEl);
+            i++;
+            heroTypewriterTimerId = setTimeout(tick, stepMs);
+        }
+
+        heroTypewriterTimerId = setTimeout(tick, 450);
+    }
+
+    beginPhraseTypewriter(phrases[0]);
+}
 
 /**
  * Initialise le système de traduction
@@ -1411,14 +2897,28 @@ function changeLanguage(lang) {
     
     // Fermer le menu déroulant
     const langDropdown = document.getElementById('langDropdown');
+    const langBtnClose = document.getElementById('langBtn');
     if (langDropdown) {
         langDropdown.classList.remove('active');
     }
+    if (langBtnClose) {
+        langBtnClose.setAttribute('aria-expanded', 'false');
+        langBtnClose.closest('.language-selector')?.classList.remove('is-open');
+    }
+
+    // Mettre à jour le libellé du bouton de thème selon la langue
+    const activeTheme = document.body.getAttribute('data-theme') || 'light';
+    applyTheme(activeTheme);
     
     // Recharger les projets, expériences et articles pour mettre à jour les textes dynamiques
     loadProjects();
     loadExperiences();
     loadArticles();
+    syncHeaderStackHeight();
+    requestAnimationFrame(function() {
+        syncHeroRoleLineToNameWidthSoon();
+    });
+    startHeroTypewriter(lang);
 }
 
 /**
@@ -1434,16 +2934,30 @@ function initLanguageSelector() {
         langBtn.addEventListener('click', function(e) {
             e.stopPropagation();
             langDropdown.classList.toggle('active');
+            const open = langDropdown.classList.contains('active');
+            langBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+            langBtn.closest('.language-selector')?.classList.toggle('is-open', open);
         });
         
         // Fermer le menu en cliquant ailleurs
         document.addEventListener('click', function() {
             langDropdown.classList.remove('active');
+            langBtn.setAttribute('aria-expanded', 'false');
+            langBtn.closest('.language-selector')?.classList.remove('is-open');
         });
         
         // Empêcher la fermeture en cliquant dans le menu
         langDropdown.addEventListener('click', function(e) {
             e.stopPropagation();
+        });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && langDropdown.classList.contains('active')) {
+                langDropdown.classList.remove('active');
+                langBtn.setAttribute('aria-expanded', 'false');
+                langBtn.closest('.language-selector')?.classList.remove('is-open');
+                langBtn.focus();
+            }
         });
     }
     
@@ -1470,18 +2984,37 @@ function initArticleAdmin() {
     const addArticleForm = document.getElementById('addArticleForm');
     const exportBtn = document.getElementById('exportArticlesBtn');
     const clearBtn = document.getElementById('clearLocalArticlesBtn');
+    const typeDirect = document.getElementById('articleTypeDirect');
+    const typeExternal = document.getElementById('articleTypeExternal');
+    const titleInput = document.getElementById('articleTitle');
+    const authorInput = document.getElementById('articleAuthor');
+    const categoryInput = document.getElementById('articleCategory');
+    const contentInput = document.getElementById('articleContent');
+    const linkInput = document.getElementById('articleLink');
+    const externalDescriptionInput = document.getElementById('articleExternalDescription');
+    const slugInput = document.getElementById('articleSlug');
     
     // Ouvrir le panneau d'administration (réinitialiser le mode édition)
     if (adminBtn && adminPanel) {
         adminBtn.addEventListener('click', function() {
             adminPanel.style.display = 'flex';
+            ensureArticlesEditableSnapshot();
+            setupArticleCategorySelect('');
             if (addArticleForm) {
                 addArticleForm.dataset.editingIndex = '';
                 addArticleForm.reset();
+                window.__articleImageDataUrl = '';
+                const imgFile = document.getElementById('articleImageFile');
+                const imgStatus = document.getElementById('articleImageStatus');
+                if (imgFile) imgFile.value = '';
+                if (imgStatus) imgStatus.textContent = 'Choisissez un fichier image de couverture (optionnel).';
+                if (typeDirect) typeDirect.checked = true;
+                toggleArticleAdminMode();
                 const submitBtn = document.getElementById('articleSubmitBtn');
                 if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'article';
             }
             updateLocalArticlesList();
+            refreshArticleEditorPreview();
         });
     }
     
@@ -1502,31 +3035,87 @@ function initArticleAdmin() {
     }
     
     // Gérer l'ajout ou la mise à jour d'un article
+    if (typeDirect) typeDirect.addEventListener('change', toggleArticleAdminMode);
+    if (typeExternal) typeExternal.addEventListener('change', toggleArticleAdminMode);
+    if (typeDirect) typeDirect.addEventListener('change', refreshArticleEditorPreview);
+    if (typeExternal) typeExternal.addEventListener('change', refreshArticleEditorPreview);
+    if (titleInput) titleInput.addEventListener('input', function () {
+        const slugEl = document.getElementById('articleSlug');
+        const isEditing = !!(addArticleForm && addArticleForm.dataset.editingIndex !== undefined && addArticleForm.dataset.editingIndex !== '');
+        if (slugEl && !isEditing) slugEl.value = slugifyArticleTitle(titleInput.value || '');
+        refreshArticleEditorPreview();
+    });
+    if (authorInput) authorInput.addEventListener('input', refreshArticleEditorPreview);
+    if (categoryInput) categoryInput.addEventListener('change', refreshArticleEditorPreview);
+    if (contentInput) contentInput.addEventListener('input', refreshArticleEditorPreview);
+    if (linkInput) linkInput.addEventListener('input', refreshArticleEditorPreview);
+    if (externalDescriptionInput) externalDescriptionInput.addEventListener('input', refreshArticleEditorPreview);
+    if (slugInput) slugInput.addEventListener('input', refreshArticleEditorPreview);
+
     if (addArticleForm) {
         addArticleForm.addEventListener('submit', function(e) {
             e.preventDefault();
             const title = document.getElementById('articleTitle').value;
-            const description = document.getElementById('articleDescription').value;
-            const link = document.getElementById('articleLink').value;
-            const date = document.getElementById('articleDate').value || new Date().toISOString().split('T')[0];
-            const article = { title: title, description: description, link: link, date: date };
+            const author = document.getElementById('articleAuthor').value.trim();
+            const category = normalizeArticleCategory(document.getElementById('articleCategory').value);
+            const content = document.getElementById('articleContent').value.trim() || null;
+            const link = document.getElementById('articleLink').value.trim() || null;
+            const externalDescription = document.getElementById('articleExternalDescription').value.trim() || null;
+            const image = (window.__articleImageDataUrl && String(window.__articleImageDataUrl).trim()) ? String(window.__articleImageDataUrl).trim() : null;
             const editingIndex = addArticleForm.dataset.editingIndex;
+            const slug = editingIndex !== undefined && editingIndex !== ''
+                ? getArticleCanonicalSlug(getLocalArticles()[parseInt(editingIndex, 10)] || { title: title })
+                : slugifyArticleTitle(title);
+            const articleType = typeExternal && typeExternal.checked ? 'external' : 'direct';
+            const directContent = articleType === 'direct' ? content : null;
+            const externalLink = articleType === 'external' ? link : null;
+            if (articleType === 'direct' && !author) {
+                showToast('Ajoutez le nom de l’auteur pour un article direct.', 'info');
+                return;
+            }
+            if ((articleType === 'direct' && !directContent) || (articleType === 'external' && !externalLink)) {
+                showToast(articleType === 'direct'
+                    ? 'Ajoutez le contenu complet de l’article.'
+                    : 'Ajoutez le lien externe de l’article.', 'info');
+                return;
+            }
+            const publishedAt = new Date().toISOString().split('T')[0];
+            const article = {
+                title: title,
+                author: author,
+                category: category || null,
+                content: directContent,
+                description: articleType === 'external' ? externalDescription : null,
+                slug: slug,
+                link: externalLink,
+                type: articleType,
+                image: image,
+                date: publishedAt
+            };
             if (editingIndex !== undefined && editingIndex !== '') {
                 const articles = getLocalArticles();
+                const old = articles[parseInt(editingIndex, 10)] || {};
+                article.slug = old.slug ? normalizeArticleSlug(old.slug) : article.slug;
+                if (!article.image && old.image) article.image = old.image;
+                if (old.date) article.date = old.date;
                 articles[parseInt(editingIndex, 10)] = article;
                 localStorage.setItem('portfolio-articles', JSON.stringify(articles));
                 addArticleForm.dataset.editingIndex = '';
                 addArticleForm.reset();
+                window.__articleImageDataUrl = '';
                 const submitBtn = document.getElementById('articleSubmitBtn');
                 if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter l\'article';
                 showToast('Article mis à jour !', 'success');
             } else {
                 saveLocalArticle(article);
                 addArticleForm.reset();
+                window.__articleImageDataUrl = '';
                 showToast('Article ajouté avec succès !', 'success');
             }
+            refreshArticleEditorPreview();
             loadArticles();
             updateLocalArticlesList();
+            notifySupabasePortfolioPersist('articles');
             if (adminPanel) adminPanel.style.display = 'none';
             scrollToSection('articles');
         });
@@ -1551,6 +3140,125 @@ function initArticleAdmin() {
             }
         });
     }
+    refreshArticleEditorPreview();
+}
+
+function toggleArticleAdminMode() {
+    const isExternal = !!(document.getElementById('articleTypeExternal') && document.getElementById('articleTypeExternal').checked);
+    const contentWrap = document.getElementById('articleContentWrap');
+    const slugWrap = document.getElementById('articleSlugWrap');
+    const linkWrap = document.getElementById('articleLinkWrap');
+    const externalDescriptionWrap = document.getElementById('articleExternalDescriptionWrap');
+    const imageWrap = document.getElementById('articleImageWrap');
+    if (contentWrap) contentWrap.style.display = isExternal ? 'none' : '';
+    if (slugWrap) slugWrap.style.display = isExternal ? 'none' : '';
+    if (linkWrap) linkWrap.style.display = isExternal ? '' : 'none';
+    if (externalDescriptionWrap) externalDescriptionWrap.style.display = isExternal ? '' : 'none';
+    if (imageWrap) imageWrap.style.display = '';
+}
+
+function initArticleImageTools() {
+    const fileInput = document.getElementById('articleImageFile');
+    const statusEl = document.getElementById('articleImageStatus');
+    if (!fileInput) return;
+    window.__articleImageDataUrl = '';
+
+    const setStatus = function (msg) {
+        if (statusEl) statusEl.textContent = msg || '';
+    };
+
+    fileInput.addEventListener('change', function () {
+        const file = fileInput.files && fileInput.files[0];
+        if (!file) {
+            window.__articleImageDataUrl = '';
+            setStatus('Aucun fichier sélectionné.');
+            refreshArticleEditorPreview();
+            return;
+        }
+        if (!file.type || !file.type.startsWith('image/')) {
+            window.__articleImageDataUrl = '';
+            setStatus('Le fichier sélectionné n’est pas une image.');
+            refreshArticleEditorPreview();
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function () {
+            window.__articleImageDataUrl = String(reader.result || '');
+            setStatus('Image prête pour publication.');
+            refreshArticleEditorPreview();
+        };
+        reader.onerror = function () {
+            setStatus('Erreur lors de l’import local.');
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function getAdminArticleDraft() {
+    const title = (document.getElementById('articleTitle') && document.getElementById('articleTitle').value.trim()) || '';
+    const author = (document.getElementById('articleAuthor') && document.getElementById('articleAuthor').value.trim()) || '';
+    const category = normalizeArticleCategory((document.getElementById('articleCategory') && document.getElementById('articleCategory').value.trim()) || '');
+    const content = (document.getElementById('articleContent') && document.getElementById('articleContent').value.trim()) || '';
+    const externalLink = (document.getElementById('articleLink') && document.getElementById('articleLink').value.trim()) || '';
+    const externalDescription = (document.getElementById('articleExternalDescription') && document.getElementById('articleExternalDescription').value.trim()) || '';
+    const isExternal = !!(document.getElementById('articleTypeExternal') && document.getElementById('articleTypeExternal').checked);
+    return {
+        title: title,
+        author: author,
+        category: category,
+        content: isExternal ? '' : content,
+        description: isExternal ? externalDescription : '',
+        type: isExternal ? 'external' : 'direct',
+        link: isExternal ? externalLink : null,
+        image: (window.__articleImageDataUrl && String(window.__articleImageDataUrl).trim()) ? String(window.__articleImageDataUrl).trim() : null,
+        date: new Date().toISOString().split('T')[0]
+    };
+}
+
+function refreshArticleEditorPreview() {
+    const emptyEl = document.getElementById('articleEditorPreviewEmpty');
+    const cardEl = document.getElementById('articleEditorPreviewCard');
+    const titleEl = document.getElementById('articleEditorPreviewTitle');
+    const metaEl = document.getElementById('articleEditorPreviewMeta');
+    const coverEl = document.getElementById('articleEditorPreviewCover');
+    const bodyEl = document.getElementById('articleEditorPreviewBody');
+    if (!emptyEl || !cardEl || !titleEl || !metaEl || !coverEl || !bodyEl) return;
+
+    const draft = getAdminArticleDraft();
+    const hasContent = !!(draft.title || draft.author || draft.content || draft.link || draft.image);
+    if (!hasContent) {
+        emptyEl.style.display = '';
+        cardEl.style.display = 'none';
+        titleEl.textContent = '';
+        metaEl.textContent = '';
+        coverEl.innerHTML = '';
+        bodyEl.innerHTML = '';
+        return;
+    }
+
+    emptyEl.style.display = 'none';
+    cardEl.style.display = '';
+    titleEl.textContent = draft.title || 'Titre de l’article';
+    const typeLabel = draft.type === 'external' ? 'Aperçu lien externe' : 'Aperçu article direct';
+    const categoryPart = draft.category ? (' - ' + draft.category) : '';
+    metaEl.textContent = `${typeLabel} - ${draft.author ? ('Par ' + draft.author + ' - ') : ''}${formatDate(draft.date)}${categoryPart}`;
+
+    coverEl.innerHTML = draft.image
+        ? `<img src="${escapeAttr(draft.image)}" alt="${escapeAttr(draft.title || 'Image article')}" loading="lazy">`
+        : '';
+
+    if (draft.type === 'external') {
+        const desc = draft.description ? `<p class="description-para">${markdownInlineToHtml(draft.description)}</p>` : '';
+        if (draft.link) {
+            bodyEl.innerHTML = `${desc}<p class="description-para"><strong>Lien externe :</strong> <a href="${escapeAttr(draft.link)}" target="_blank" rel="noopener">${escapeAttr(draft.link)}</a></p>`;
+        } else {
+            bodyEl.innerHTML = `${desc}<p class="description-para">Ajoutez un lien externe pour voir le rendu.</p>`;
+        }
+        return;
+    }
+
+    const contentSource = draft.content;
+    bodyEl.innerHTML = contentSource ? markdownToHtml(contentSource) : '<p class="description-para">Commencez à écrire le contenu de l’article.</p>';
 }
 
 /**
@@ -1571,8 +3279,8 @@ function updateLocalArticlesList() {
         <div class="admin-article-item">
             <div class="admin-article-info">
                 <strong>${article.title}</strong>
-                <p>${article.description}</p>
-                <small>${article.date || 'Date non spécifiée'}</small>
+                <p>${article.author ? ('Par ' + article.author) : ''}${article.type === 'external' && article.description ? ' - ' + article.description : ''}</p>
+                <small>${article.date || 'Date non spécifiée'}${article.category ? ' · ' + article.category : ''}${article.slug ? ' · ' + article.slug : ''}</small>
             </div>
             <div class="admin-item-actions">
                 <button type="button" class="btn-edit btn-edit-article" data-index="${index}" title="Modifier">
@@ -1594,11 +3302,21 @@ function updateLocalArticlesList() {
             const a = articles[index];
             if (!a) return;
             document.getElementById('articleTitle').value = a.title || '';
-            document.getElementById('articleDescription').value = a.description || '';
+            document.getElementById('articleAuthor').value = a.author || '';
+            setupArticleCategorySelect(a.category || '');
+            document.getElementById('articleContent').value = a.content || '';
+            document.getElementById('articleExternalDescription').value = a.description || '';
+            document.getElementById('articleSlug').value = getArticleCanonicalSlug(a);
+            window.__articleImageDataUrl = a.image || '';
+            const imgStatus = document.getElementById('articleImageStatus');
+            if (imgStatus) imgStatus.textContent = a.image ? 'Image déjà enregistrée pour cet article.' : 'Choisissez un fichier image de couverture (optionnel).';
+            document.getElementById('articleTypeExternal').checked = (a.type === 'external');
+            document.getElementById('articleTypeDirect').checked = (a.type !== 'external');
             document.getElementById('articleLink').value = a.link || '';
-            document.getElementById('articleDate').value = a.date || '';
+            toggleArticleAdminMode();
             addArticleForm.dataset.editingIndex = String(index);
             if (articleSubmitBtn) articleSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+            refreshArticleEditorPreview();
         });
     });
     localArticlesList.querySelectorAll('.btn-remove-article').forEach(btn => {
@@ -1611,9 +3329,10 @@ function updateLocalArticlesList() {
             }
             const articles = getLocalArticles();
             articles.splice(index, 1);
-            localStorage.setItem('portfolio-articles', JSON.stringify(articles));
+            setLocalArticles(articles);
             loadArticles();
             updateLocalArticlesList();
+            notifySupabasePortfolioPersist('articles');
             showToast('Article supprimé.', 'info');
         });
     });
@@ -1666,13 +3385,15 @@ function initProjectAdmin() {
             e.preventDefault();
             const title = document.getElementById('projectTitle').value;
             const description = document.getElementById('projectDescription').value;
+            const contributions = document.getElementById('projectContributions').value.trim() || null;
             const image = document.getElementById('projectImage').value.trim() || null;
             const technologiesInput = document.getElementById('projectTechnologies').value;
             const technologies = technologiesInput ? technologiesInput.split(',').map(t => t.trim()).filter(Boolean) : [];
             const github = document.getElementById('projectGithub').value.trim() || null;
             const demo = document.getElementById('projectDemo').value.trim() || null;
+            const about = document.getElementById('projectAbout').value.trim() || null;
             const cardano = document.getElementById('projectCardano').checked;
-            const project = { title: title, description: description, image: image, technologies: technologies, github: github, demo: demo, cardano: cardano };
+            const project = { title: title, description: description, contributions: contributions, image: image, technologies: technologies, github: github, demo: demo, about: about, cardano: cardano };
             const editingIndex = addProjectForm.dataset.editingIndex;
             if (editingIndex !== undefined && editingIndex !== '') {
                 const projects = getLocalProjects();
@@ -1690,6 +3411,7 @@ function initProjectAdmin() {
             }
             loadProjects();
             updateLocalProjectsList();
+            notifySupabasePortfolioPersist('projects');
             if (adminPanel) adminPanel.style.display = 'none';
             scrollToSection('projets');
         });
@@ -1756,10 +3478,12 @@ function updateLocalProjectsList() {
             if (!p) return;
             document.getElementById('projectTitle').value = p.title || '';
             document.getElementById('projectDescription').value = p.description || '';
+            document.getElementById('projectContributions').value = p.contributions || '';
             document.getElementById('projectImage').value = p.image || '';
             document.getElementById('projectTechnologies').value = (p.technologies && p.technologies.length) ? p.technologies.join(', ') : '';
             document.getElementById('projectGithub').value = p.github || '';
             document.getElementById('projectDemo').value = p.demo || '';
+            document.getElementById('projectAbout').value = p.about || '';
             document.getElementById('projectCardano').checked = !!p.cardano;
             addProjectForm.dataset.editingIndex = String(index);
             if (projectSubmitBtn) projectSubmitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
@@ -1778,6 +3502,7 @@ function updateLocalProjectsList() {
             localStorage.setItem('portfolio-projects', JSON.stringify(projects));
             loadProjects();
             updateLocalProjectsList();
+            notifySupabasePortfolioPersist('projects');
             showToast('Projet supprimé.', 'info');
         });
     });
@@ -1844,6 +3569,7 @@ function initExperienceAdmin() {
             }
             loadExperiences();
             updateLocalExperiencesList();
+            notifySupabasePortfolioPersist('experiences');
             if (adminPanel) adminPanel.style.display = 'none';
             scrollToSection('experiences');
         });
@@ -1921,7 +3647,324 @@ function updateLocalExperiencesList() {
             localStorage.setItem('portfolio-experiences', JSON.stringify(arr));
             loadExperiences();
             updateLocalExperiencesList();
+            notifySupabasePortfolioPersist('experiences');
             showToast('Expérience supprimée.', 'info');
+        });
+    });
+}
+
+function initInlineAdminQuickEdit() {
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.inline-edit-btn');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const entity = btn.getAttribute('data-entity');
+        const index = parseInt(btn.getAttribute('data-index'), 10);
+        if (!Number.isFinite(index) || index < 0) return;
+        if (entity === 'project') openQuickEditProject(index);
+        else if (entity === 'article') openQuickEditArticle(index);
+        else if (entity === 'article-delete') removeArticleAtIndex(index);
+        else if (entity === 'experience') openQuickEditExperience(index);
+        else if (entity === 'skill') {
+            const category = btn.getAttribute('data-category');
+            openQuickEditSkill(category, index);
+        }
+    });
+}
+
+function openQuickEditProject(index) {
+    const adminPanel = document.getElementById('adminProjectPanel');
+    const form = document.getElementById('addProjectForm');
+    const submitBtn = document.getElementById('projectSubmitBtn');
+    if (!adminPanel || !form || !currentProjectsData[index]) return;
+    localStorage.setItem('portfolio-projects', JSON.stringify(currentProjectsData));
+    const p = currentProjectsData[index];
+    document.getElementById('projectTitle').value = p.title || '';
+    document.getElementById('projectDescription').value = p.description || '';
+    document.getElementById('projectContributions').value = p.contributions || '';
+    document.getElementById('projectImage').value = p.image || '';
+    document.getElementById('projectTechnologies').value = (p.technologies && p.technologies.length) ? p.technologies.join(', ') : '';
+    document.getElementById('projectGithub').value = p.github || '';
+    document.getElementById('projectDemo').value = p.demo || '';
+    document.getElementById('projectAbout').value = p.about || '';
+    document.getElementById('projectCardano').checked = !!p.cardano;
+    form.dataset.editingIndex = String(index);
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+    adminPanel.style.display = 'flex';
+    updateLocalProjectsList();
+}
+
+function openQuickEditArticle(index) {
+    const adminPanel = document.getElementById('adminPanel');
+    const form = document.getElementById('addArticleForm');
+    const submitBtn = document.getElementById('articleSubmitBtn');
+    if (!adminPanel || !form || !currentArticlesData[index]) return;
+    localStorage.setItem('portfolio-articles', JSON.stringify(currentArticlesData));
+    const a = currentArticlesData[index];
+    document.getElementById('articleTitle').value = a.title || '';
+    document.getElementById('articleAuthor').value = a.author || '';
+    setupArticleCategorySelect(a.category || '');
+    document.getElementById('articleContent').value = a.content || '';
+    document.getElementById('articleExternalDescription').value = a.description || '';
+    document.getElementById('articleSlug').value = getArticleCanonicalSlug(a);
+    window.__articleImageDataUrl = a.image || '';
+    const imgFile = document.getElementById('articleImageFile');
+    const imgStatus = document.getElementById('articleImageStatus');
+    if (imgFile) imgFile.value = '';
+    if (imgStatus) imgStatus.textContent = a.image ? 'Image déjà enregistrée pour cet article.' : 'Choisissez un fichier image de couverture (optionnel).';
+    document.getElementById('articleTypeExternal').checked = (a.type === 'external');
+    document.getElementById('articleTypeDirect').checked = (a.type !== 'external');
+    document.getElementById('articleLink').value = a.link || '';
+    toggleArticleAdminMode();
+    form.dataset.editingIndex = String(index);
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+    adminPanel.style.display = 'flex';
+    updateLocalArticlesList();
+    refreshArticleEditorPreview();
+}
+
+function removeArticleAtIndex(index) {
+    if (!Array.isArray(currentArticlesData) || !currentArticlesData[index]) return;
+    const target = currentArticlesData[index];
+    const title = target && target.title ? String(target.title) : 'cet article';
+    if (!confirm(`Supprimer "${title}" ?`)) return;
+    const next = currentArticlesData.slice();
+    next.splice(index, 1);
+    setLocalArticles(next);
+    currentArticlesData = next;
+    loadArticles();
+    updateLocalArticlesList();
+    notifySupabasePortfolioPersist('articles');
+    showToast('Article supprimé.', 'info');
+}
+
+function openQuickEditExperience(index) {
+    const adminPanel = document.getElementById('adminExperiencePanel');
+    const form = document.getElementById('addExperienceForm');
+    const submitBtn = document.getElementById('experienceSubmitBtn');
+    if (!adminPanel || !form || !currentExperiencesData[index]) return;
+    localStorage.setItem('portfolio-experiences', JSON.stringify(currentExperiencesData));
+    const exp = currentExperiencesData[index];
+    document.getElementById('experienceTitle').value = exp.title || '';
+    document.getElementById('experienceOrganization').value = exp.organization || '';
+    document.getElementById('experienceDescription').value = exp.description || '';
+    document.getElementById('experiencePeriod').value = exp.period || '';
+    document.getElementById('experienceLink').value = exp.link || '';
+    form.dataset.editingIndex = String(index);
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+    adminPanel.style.display = 'flex';
+    updateLocalExperiencesList();
+}
+
+function openQuickEditSkill(category, index) {
+    const adminPanel = document.getElementById('adminSkillsPanel');
+    const form = document.getElementById('addSkillForm');
+    const submitBtn = document.getElementById('skillSubmitBtn');
+    if (!adminPanel || !form || !SKILL_CATEGORIES.includes(category)) return;
+    ensureSkillsEditableSnapshot();
+    const skill = currentSkillsData[category] && currentSkillsData[category][index];
+    if (!skill) return;
+    document.getElementById('skillCategory').value = category;
+    document.getElementById('skillName').value = skill.name || '';
+    document.getElementById('skillIcon').value = skill.icon || '';
+    document.getElementById('skillLevel').value = Number.isFinite(Number(skill.level)) ? Number(skill.level) : 0;
+    document.getElementById('skillLink').value = skill.link || '';
+    document.getElementById('skillCertification').checked = !!skill.certification;
+    form.dataset.editingCategory = category;
+    form.dataset.editingIndex = String(index);
+    if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+    adminPanel.style.display = 'flex';
+    updateLocalSkillsList();
+}
+
+// ============================================
+// ADMINISTRATION DES COMPÉTENCES
+// ============================================
+
+function initSkillsAdmin() {
+    const adminBtn = document.getElementById('adminSkillsBtn');
+    const adminPanel = document.getElementById('adminSkillsPanel');
+    const closeBtn = document.getElementById('closeAdminSkillsBtn');
+    const form = document.getElementById('addSkillForm');
+    const exportBtn = document.getElementById('exportSkillsBtn');
+    const clearBtn = document.getElementById('clearLocalSkillsBtn');
+
+    if (adminBtn && adminPanel) {
+        adminBtn.addEventListener('click', function () {
+            ensureSkillsEditableSnapshot();
+            adminPanel.style.display = 'flex';
+            if (form) {
+                form.dataset.editingCategory = '';
+                form.dataset.editingIndex = '';
+                form.reset();
+                const submitBtn = document.getElementById('skillSubmitBtn');
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter la compétence';
+            }
+            updateLocalSkillsList();
+        });
+    }
+
+    if (closeBtn && adminPanel) {
+        closeBtn.addEventListener('click', function () {
+            adminPanel.style.display = 'none';
+        });
+    }
+
+    if (adminPanel) {
+        adminPanel.addEventListener('click', function (e) {
+            if (e.target === adminPanel) adminPanel.style.display = 'none';
+        });
+    }
+
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            const category = document.getElementById('skillCategory').value;
+            const skill = {
+                name: document.getElementById('skillName').value.trim(),
+                icon: document.getElementById('skillIcon').value.trim(),
+                level: Math.max(0, Math.min(100, Number(document.getElementById('skillLevel').value))),
+                link: document.getElementById('skillLink').value.trim() || null,
+                certification: !!document.getElementById('skillCertification').checked
+            };
+            if (!category || !skill.name || !skill.icon || !Number.isFinite(skill.level)) {
+                showToast('Veuillez renseigner les champs obligatoires.', 'info');
+                return;
+            }
+
+            const editingCategory = form.dataset.editingCategory;
+            const editingIndex = form.dataset.editingIndex;
+            const all = cloneSkillsData(currentSkillsData);
+            if (editingCategory && editingIndex !== '') {
+                const idx = parseInt(editingIndex, 10);
+                if (SKILL_CATEGORIES.includes(editingCategory) && Number.isFinite(idx) && all[editingCategory][idx]) {
+                    all[editingCategory][idx] = skill;
+                    setLocalSkills(all);
+                    currentSkillsData = cloneSkillsData(all);
+                    showToast('Compétence mise à jour !', 'success');
+                }
+                form.dataset.editingCategory = '';
+                form.dataset.editingIndex = '';
+            } else {
+                if (!SKILL_CATEGORIES.includes(category)) {
+                    showToast('Catégorie invalide.', 'info');
+                    return;
+                }
+                all[category].push(skill);
+                setLocalSkills(all);
+                currentSkillsData = cloneSkillsData(all);
+                showToast('Compétence ajoutée avec succès !', 'success');
+            }
+
+            form.reset();
+            const submitBtn = document.getElementById('skillSubmitBtn');
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter la compétence';
+            loadSkills();
+            updateLocalSkillsList();
+            notifySupabasePortfolioPersist('skills');
+            if (adminPanel) adminPanel.style.display = 'none';
+            scrollToSection('competences');
+        });
+    }
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', function () {
+            exportSkills();
+            showToast('Fichier skills.json téléchargé !', 'info');
+        });
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function () {
+            if (confirm('Effacer toutes les compétences ?')) {
+                clearLocalSkills();
+                currentSkillsData = createEmptySkillsData();
+                loadSkills();
+                updateLocalSkillsList();
+                notifySupabasePortfolioPersist('skills');
+                showToast('Compétences effacées.', 'info');
+            }
+        });
+    }
+}
+
+function updateLocalSkillsList() {
+    const list = document.getElementById('localSkillsList');
+    if (!list) return;
+    const local = cloneSkillsData(currentSkillsData);
+    const rows = [];
+    SKILL_CATEGORIES.forEach(function (cat) {
+        local[cat].forEach(function (skill, index) {
+            rows.push({ cat: cat, index: index, skill: skill });
+        });
+    });
+    if (rows.length === 0) {
+        list.innerHTML = '<p style="color: var(--text-secondary);">Aucune compétence disponible.</p>';
+        return;
+    }
+
+    list.innerHTML = rows.map(function (row) {
+        const s = row.skill;
+        return `
+        <div class="admin-article-item">
+            <div class="admin-article-info">
+                <strong>${s.name}</strong>
+                <p>Catégorie: ${row.cat} · Niveau: ${s.level}%</p>
+                <small>${s.icon}${s.link ? ' · ' + s.link : ''}${s.certification ? ' · certification' : ''}</small>
+            </div>
+            <div class="admin-item-actions">
+                <button type="button" class="btn-edit btn-edit-skill" data-category="${row.cat}" data-index="${row.index}" title="Modifier">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="btn-remove-article btn-remove-skill" data-category="${row.cat}" data-index="${row.index}" title="Supprimer">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>`;
+    }).join('');
+
+    const form = document.getElementById('addSkillForm');
+    const submitBtn = document.getElementById('skillSubmitBtn');
+
+    list.querySelectorAll('.btn-edit-skill').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const category = this.getAttribute('data-category');
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const all = cloneSkillsData(currentSkillsData);
+            const skill = all[category] && all[category][index];
+            if (!skill || !form) return;
+            document.getElementById('skillCategory').value = category;
+            document.getElementById('skillName').value = skill.name || '';
+            document.getElementById('skillIcon').value = skill.icon || '';
+            document.getElementById('skillLevel').value = Number.isFinite(Number(skill.level)) ? Number(skill.level) : 0;
+            document.getElementById('skillLink').value = skill.link || '';
+            document.getElementById('skillCertification').checked = !!skill.certification;
+            form.dataset.editingCategory = category;
+            form.dataset.editingIndex = String(index);
+            if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-save"></i> Mettre à jour';
+        });
+    });
+
+    list.querySelectorAll('.btn-remove-skill').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const category = this.getAttribute('data-category');
+            const index = parseInt(this.getAttribute('data-index'), 10);
+            const all = cloneSkillsData(currentSkillsData);
+            if (!SKILL_CATEGORIES.includes(category) || !Number.isFinite(index)) return;
+            all[category].splice(index, 1);
+            setLocalSkills(all);
+            currentSkillsData = cloneSkillsData(all);
+            if (form && form.dataset.editingCategory === category && form.dataset.editingIndex === String(index)) {
+                form.reset();
+                form.dataset.editingCategory = '';
+                form.dataset.editingIndex = '';
+                if (submitBtn) submitBtn.innerHTML = '<i class="fas fa-plus"></i> Ajouter la compétence';
+            }
+            loadSkills();
+            updateLocalSkillsList();
+            notifySupabasePortfolioPersist('skills');
+            showToast('Compétence supprimée.', 'info');
         });
     });
 }

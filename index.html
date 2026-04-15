@@ -12,87 +12,144 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <!-- Styles personnalisés -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <div class="nav-brand">
-                <a href="#accueil">Mwatsimulamo</a>
-            </div>
-            <ul class="nav-menu" id="navMenu">
-                <li><a href="#accueil" class="nav-link" data-i18n="nav.home">Accueil</a></li>
-                <li><a href="#apropos" class="nav-link" data-i18n="nav.about">À propos</a></li>
-                <li><a href="#experiences" class="nav-link" data-i18n="nav.experiences">Expériences</a></li>
-                <li><a href="#competences" class="nav-link" data-i18n="nav.skills">Compétences</a></li>
-                <li><a href="#projets" class="nav-link" data-i18n="nav.projects">Projets</a></li>
-                <li><a href="#articles" class="nav-link" data-i18n="nav.articles">Articles</a></li>
-                <li><a href="#cv" class="nav-link" data-i18n="nav.cv">CV</a></li>
-                <li><a href="#contact" class="nav-link" data-i18n="nav.contact">Contact</a></li>
-            </ul>
-            <div class="language-selector">
-                <button class="lang-btn" id="langBtn" title="Changer la langue">
-                    <i class="fas fa-globe"></i>
-                    <span id="currentLang">FR</span>
-                </button>
-                <div class="lang-dropdown" id="langDropdown">
-                    <button class="lang-option" data-lang="fr">🇫🇷 Français</button>
-                    <button class="lang-option" data-lang="en">🇬🇧 English</button>
+    <!-- En-tête : barre contact + navigation flottante (design type « pilule ») -->
+    <header class="site-header" id="siteHeader">
+        <div class="preheader" aria-label="Contact rapide">
+            <div class="container preheader-inner">
+                <a href="mailto:mwatsimulamoolivier@gmail.com" class="preheader-mail">
+                    <i class="fas fa-envelope" aria-hidden="true"></i>
+                    <span>mwatsimulamoolivier@gmail.com</span>
+                </a>
+                <div class="preheader-social">
+                    <a href="https://x.com/OlivierMWATSIM1" class="preheader-social-link" target="_blank" rel="noopener" title="X (Twitter)" aria-label="X (Twitter)"><i class="fab fa-twitter" aria-hidden="true"></i></a>
+                    <a href="https://t.me/OlivierMWATSIMULAMO" class="preheader-social-link" target="_blank" rel="noopener" title="Telegram" aria-label="Telegram"><i class="fab fa-telegram-plane" aria-hidden="true"></i></a>
+                    <a href="https://wa.me/243974380853" class="preheader-social-link" target="_blank" rel="noopener" title="WhatsApp" aria-label="WhatsApp"><i class="fab fa-whatsapp" aria-hidden="true"></i></a>
+                    <a href="https://github.com/mwatsimulamo" class="preheader-social-link" target="_blank" rel="noopener" title="GitHub" aria-label="GitHub"><i class="fab fa-github" aria-hidden="true"></i></a>
                 </div>
             </div>
-            <div class="hamburger" id="hamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
         </div>
-    </nav>
+        <div class="navbar-shell">
+            <nav class="navbar navbar--floating" id="navbar">
+                <div class="container navbar-inner">
+                    <div class="nav-brand">
+                        <span class="nav-brand-mark" aria-hidden="true">O</span>
+                        <a href="#accueil">Mwatsimulamo</a>
+                    </div>
+                    <ul class="nav-menu" id="navMenu">
+                        <li><a href="#experiences" class="nav-link" data-i18n="nav.experiences">Expériences</a></li>
+                        <li><a href="#competences" class="nav-link" data-i18n="nav.skills">Compétences</a></li>
+                        <li><a href="#services" class="nav-link" data-i18n="nav.services">Services</a></li>
+                        <li><a href="#projets" class="nav-link" data-i18n="nav.projects">Projets</a></li>
+                        <li><a href="#articles" class="nav-link" data-i18n="nav.articles">Articles</a></li>
+                        <li><a href="#cv" class="nav-link" data-i18n="nav.cv">CV</a></li>
+                        <li><a href="#contact" class="nav-link" data-i18n="nav.contact">Contact</a></li>
+                    </ul>
+                    <div class="nav-utilities">
+                        <div class="header-controls" aria-label="Langue et thème">
+                            <div class="language-selector">
+                                <button type="button" class="lang-btn" id="langBtn" title="Changer la langue" aria-expanded="false" aria-haspopup="listbox" aria-controls="langDropdown">
+                                    <i class="fas fa-globe lang-btn__icon" aria-hidden="true"></i>
+                                    <span id="currentLang" class="lang-btn__code">FR</span>
+                                    <i class="fas fa-chevron-down lang-btn__chevron" aria-hidden="true"></i>
+                                </button>
+                                <div class="lang-dropdown" id="langDropdown" role="listbox" aria-labelledby="langBtn">
+                                    <button type="button" class="lang-option" data-lang="fr" role="option">🇫🇷 Français</button>
+                                    <button type="button" class="lang-option" data-lang="en" role="option">🇬🇧 English</button>
+                                </div>
+                            </div>
+                            <button class="theme-toggle-btn" id="themeToggleBtn" type="button" title="Activer le mode sombre" aria-label="Activer le mode sombre">
+                                <i class="fas fa-moon" id="themeToggleIcon" aria-hidden="true"></i>
+                            </button>
+                        </div>
+                        <div class="hamburger" id="hamburger">
+                            <span></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
 
-    <!-- Section Accueil -->
+    <!-- Section Accueil (split type portfolio : texte + photo, sans badges flottants) -->
     <section id="accueil" class="hero">
-        <div class="container">
-            <div class="hero-content">
-                <h1 class="hero-title">Olivier Mwatsimulamo</h1>
-                <p class="hero-subtitle" data-i18n="hero.subtitle">UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Formateur Web3 & Contributeur Communautaire | Rédacteur Technique | Créateur de Contenus Web3 | Reviseur – Project Catalyst Cardano</p>
-                <p class="hero-bio" data-i18n="hero.bio">
-                    Spécialisé dans l'écosystème Cardano, la formation et la création de contenus Web3.
+        <div class="container hero-grid">
+            <div class="hero-copy">
+                <p class="hero-hello-wrap">
+                    <span class="hero-hello" data-i18n="hero.hello">Hello</span>
                 </p>
-                <a href="#cv" class="btn btn-primary" data-i18n="hero.downloadCv">
-                    <i class="fas fa-download"></i> Télécharger le CV
-                </a>
+                <div class="hero-identity">
+                    <h1 class="hero-title">
+                        <span class="hero-title-kicker" data-i18n="hero.titleIntro">Je suis</span>
+                        <span class="hero-title-name">Olivier Mwatsimulamo</span>
+                    </h1>
+                    <p class="hero-role-line">
+                        <span id="heroTypewriter" class="hero-typewriter" aria-label="" aria-live="polite"></span>
+                    </p>
+                </div>
+                <div class="hero-actions-row">
+                    <a href="#contact" class="btn hero-btn-primary" data-i18n="hero.ctaPrimary">
+                        <i class="fas fa-paper-plane"></i> Me contacter
+                    </a>
+                    <a href="#projets" class="btn hero-btn-ghost" data-i18n="nav.projects">
+                        <i class="fas fa-arrow-right"></i> Projets
+                    </a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-visual-deco" aria-hidden="true">
+                    <span class="hero-shape hero-shape--navy"></span>
+                    <span class="hero-shape hero-shape--teal"></span>
+                </div>
+                <div class="hero-photo-wrap">
+                    <img src="assets/images/profile.png" alt="Olivier Mwatsimulamo" class="hero-photo" width="520" height="620" loading="eager">
+                </div>
             </div>
         </div>
-        <div class="scroll-indicator">
+        <div class="scroll-indicator" aria-hidden="true">
             <i class="fas fa-chevron-down"></i>
         </div>
     </section>
 
-    <!-- Section À propos -->
-    <section id="apropos" class="section">
+    <!-- Section À propos (split + cartes, alignée sur Services) -->
+    <section id="apropos" class="section section-alt about-section">
         <div class="container">
-            <h2 class="section-title" data-i18n="about.title">À propos de moi</h2>
-            <div class="about-content">
-                <div class="about-image">
-                    <img src="assets/images/profile.png" alt="Photo de profil" id="profileImage">
-                    <!-- Placeholder si pas d'image -->
-                    <div class="profile-placeholder" id="profilePlaceholder">
-                        <i class="fas fa-user"></i>
+            <div class="about-split">
+                <div class="about-split-visual">
+                    <div class="about-visual-deco" aria-hidden="true">
+                        <span class="about-shape about-shape--navy"></span>
+                        <span class="about-shape about-shape--teal"></span>
+                    </div>
+                    <div class="about-image about-photo-frame">
+                        <img src="assets/images/profile.png" alt="Photo de profil" id="profileImage">
+                        <div class="profile-placeholder" id="profilePlaceholder">
+                            <i class="fas fa-user"></i>
+                        </div>
                     </div>
                 </div>
-                <div class="about-text">
-                    <p data-i18n="about.text1">
-                        Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano. Mon travail combine les technologies web modernes avec l'innovation blockchain pour créer des expériences numériques intuitives et centrées utilisateur.
-                    </p>
-                    <p data-i18n="about.text2">
-                        Au-delà du développement, je contribue activement à la croissance de l'écosystème Cardano et Web3 en RD Congo grâce à la formation, à l'engagement communautaire et à la rédaction technique. J'accompagne l'onboarding des nouveaux membres, crée des contenus éducatifs et aide à faire le lien entre Web2 et Web3.
-                    </p>
-                    <p data-i18n="about.text3">
-                        Passionné par la blockchain et l'apprentissage continu, je vise à développer des solutions impactantes tout en renforçant les communautés par la technologie et le partage de connaissances.
-                    </p>
+                <div class="about-split-copy">
+                    <h2 class="section-title about-split-title" data-i18n="about.title">Quelque chose sur moi</h2>
+                    <div class="about-copy">
+                        <p class="about-text about-text--lead" data-i18n="about.envLead">
+                            Diplômé en Environnement et Développement durable, passionné par le climat et les grands enjeux environnementaux.
+                        </p>
+                        <p class="about-text" data-i18n="about.text1">
+                            Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano : je combine technologies web modernes et innovation blockchain pour des expériences numériques intuitives et utiles.
+                        </p>
+                        <p class="about-text" data-i18n="about.text2">
+                            Au-delà du développement, je contribue à la croissance de l'écosystème Cardano et Web3 en RD Congo — formation, communauté, rédaction technique — en reliant Web2 et Web3 avec une attention aux impacts et à une innovation responsable.
+                        </p>
+                        <p class="about-text" data-i18n="about.text3">
+                            Le climat et le développement durable nourrissent ma façon de voir la tech : j'aspire à des solutions concrètes, des communautés plus fortes, et un apprentissage continu — entre protection de l'environnement et systèmes décentralisés.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -116,7 +173,12 @@
     <!-- Section Compétences -->
     <section id="competences" class="section section-alt">
         <div class="container">
-            <h2 class="section-title" data-i18n="skills.title">Compétences</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                <h2 class="section-title" data-i18n="skills.title" style="margin-bottom: 0;">Compétences</h2>
+                <button class="btn btn-secondary admin-only" id="adminSkillsBtn" style="display: none;">
+                    <i class="fas fa-cog"></i> Administration
+                </button>
+            </div>
             
             <!-- Frontend -->
             <div class="skill-category">
@@ -174,15 +236,67 @@
         </div>
     </section>
 
+    <!-- Section Services (split + cartes, alignée au hero) -->
+    <section id="services" class="section">
+        <div class="container">
+            <div class="services-split">
+                <div class="services-split-copy">
+                    <div class="services-split-deco" aria-hidden="true">
+                        <span class="services-shape services-shape--navy"></span>
+                        <span class="services-shape services-shape--teal"></span>
+                    </div>
+                    <h2 class="section-title services-split-title" data-i18n="services.title">Services</h2>
+                    <p class="services-lead" data-i18n="services.intro">Je réunis design, données, Web3 et la blockchain Cardano pour des résultats concrets : interfaces soignées, contenus clairs, formation pratique et accompagnement fiable de vos projets.</p>
+                    <a href="#contact" class="btn btn-primary services-split-cta">
+                        <i class="fas fa-paper-plane" aria-hidden="true"></i>
+                        <span data-i18n="services.cta">Me contacter</span>
+                    </a>
+                </div>
+                <div class="services-cards" role="list">
+                    <article class="service-card" role="listitem">
+                        <div class="service-card-icon" aria-hidden="true"><i class="fas fa-palette"></i></div>
+                        <h3 class="service-card-title" data-i18n="services.cards.ui.title">UI/UX & développement Web3</h3>
+                        <p class="service-card-desc" data-i18n="services.cards.ui.desc">Interfaces utilisateur, parcours clairs et développement orienté produit.</p>
+                    </article>
+                    <article class="service-card" role="listitem">
+                        <div class="service-card-icon" aria-hidden="true"><i class="fas fa-database"></i></div>
+                        <h3 class="service-card-title" data-i18n="services.cards.data.title">Bases de données</h3>
+                        <p class="service-card-desc" data-i18n="services.cards.data.desc">Conception, modélisation et gestion de bases de données.</p>
+                    </article>
+                    <article class="service-card" role="listitem">
+                        <div class="service-card-icon" aria-hidden="true"><i class="fas fa-clipboard-check"></i></div>
+                        <h3 class="service-card-title" data-i18n="services.cards.review.title">Revue de projets Web2 & Web3</h3>
+                        <p class="service-card-desc" data-i18n="services.cards.review.desc">Lecture critique des livrables et des jalons.</p>
+                    </article>
+                    <article class="service-card" role="listitem">
+                        <div class="service-card-icon" aria-hidden="true"><i class="fas fa-chalkboard-teacher"></i></div>
+                        <h3 class="service-card-title" data-i18n="services.cards.content.title">Contenus Web3 & formation</h3>
+                        <p class="service-card-desc" data-i18n="services.cards.content.desc">Création de contenus et formation.</p>
+                    </article>
+                    <article class="service-card service-card--wide" role="listitem">
+                        <div class="service-card-icon" aria-hidden="true"><i class="fas fa-globe"></i></div>
+                        <h3 class="service-card-title" data-i18n="services.cards.ambassador.title">Blockchains Ambassador</h3>
+                        <p class="service-card-desc" data-i18n="services.cards.ambassador.desc">Plaidoyer et représentation multi-chaînes.</p>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Section Projets -->
     <section id="projets" class="section">
         <div class="container">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
-                <h2 class="section-title" data-i18n="projects.title" style="margin-bottom: 0;">Mes Projets</h2>
-                <button class="btn btn-secondary admin-only" id="adminProjectBtn" style="display: none;">
-                    <i class="fas fa-cog"></i> Administration
-                </button>
-            </div>
+            <header class="projects-section-head">
+                <div class="projects-head-text">
+                    <h2 class="section-title projects-section-title" data-i18n="projects.title">Contributions aux projets</h2>
+                    <p class="projects-intro" data-i18n="projects.intro">Trouvez ici les projets récents sur lesquels j'ai contribué : ils combinent à la fois le Web2 et le Web3 et témoignent de mes capacités à livrer des réalisations concrètes. Vos suggestions, conseils ou appréciations pour améliorer ces projets sont les bienvenues.</p>
+                </div>
+                <div class="projects-head-side">
+                    <button class="btn btn-secondary admin-only" id="adminProjectBtn" type="button" style="display: none;">
+                        <i class="fas fa-cog"></i> Administration
+                    </button>
+                </div>
+            </header>
             <div class="projects-grid" id="projectsGrid">
                 <!-- Les projets seront chargés dynamiquement depuis projects.json -->
                 <div class="loading" data-i18n="projects.loading">Chargement des projets...</div>
@@ -198,6 +312,12 @@
                 <button class="btn btn-secondary admin-only" id="adminBtn" style="display: none;">
                     <i class="fas fa-cog"></i> Administration
                 </button>
+            </div>
+            <div class="article-filters" id="articleFilters">
+                <input type="search" id="articleSearchInput" class="article-filter-input" placeholder="Rechercher un article (titre, auteur, contenu...)">
+                <select id="articleCategoryFilter" class="article-filter-select">
+                    <option value="">Toutes les catégories</option>
+                </select>
             </div>
             <div class="articles-list" id="articlesList">
                 <!-- Les articles seront chargés dynamiquement depuis articles.json -->
@@ -218,26 +338,75 @@
             <div class="admin-body">
                 <form id="addArticleForm">
                     <div class="form-group">
+                        <label>Type d'article *</label>
+                        <div class="article-type-toggle">
+                            <label><input type="radio" name="articleType" id="articleTypeDirect" value="direct" checked> Écrire directement sur le portfolio</label>
+                            <label><input type="radio" name="articleType" id="articleTypeExternal" value="external"> Article avec lien externe</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
                         <label for="articleTitle">Titre de l'article *</label>
                         <input type="text" id="articleTitle" name="title" required>
                     </div>
+                    <div class="form-group" id="articleImageWrap">
+                        <label for="articleImageFile">Image de couverture (fichier, optionnel)</label>
+                        <input type="file" id="articleImageFile" accept="image/*">
+                        <small id="articleImageStatus" style="color: var(--text-secondary);">Choisissez un fichier image de couverture (optionnel).</small>
+                    </div>
                     <div class="form-group">
-                        <label for="articleDescription">Description *</label>
-                        <div class="description-toolbar" data-target="articleDescription">
+                        <label for="articleAuthor">Nom de l'auteur</label>
+                        <input type="text" id="articleAuthor" name="author" placeholder="Ex. Olivier Mwatsimuamo">
+                    </div>
+                    <div class="form-group">
+                        <label for="articleCategory">Catégorie</label>
+                        <select id="articleCategory" name="category">
+                            <option value="">Sélectionner une catégorie</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="articleContentWrap">
+                        <label for="articleContent">Contenu complet de l'article (optionnel)</label>
+                        <div class="description-toolbar" data-target="articleContent">
+                            <button type="button" class="toolbar-btn" data-heading="1" title="Titre 1">H1</button>
+                            <button type="button" class="toolbar-btn" data-heading="2" title="Titre 2">H2</button>
+                            <button type="button" class="toolbar-btn" data-heading="3" title="Titre 3">H3</button>
                             <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
-                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                            <div class="toolbar-dropdown" data-bullet-dropdown>
+                                <button type="button" class="toolbar-btn" data-bullet-menu-toggle title="Puces et numérotation">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <div class="toolbar-menu" data-bullet-menu>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="- ">- Liste standard</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="• ">• Puce ronde</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="◦ ">◦ Puce vide</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="▪ ">▪ Puce carrée</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="→ ">→ Flèche</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="✓ ">✓ Check</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="1. ">1. Numérotation</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="a) ">a) Alphabétique</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="I. ">I. Romain</button>
+                                </div>
+                            </div>
+                            <button type="button" class="toolbar-btn" data-insert="&#10;---&#10;" title="Séparateur horizontal"><i class="fas fa-grip-lines"></i></button>
+                            <button type="button" class="toolbar-btn" data-block="center" title="Centrer"><i class="fas fa-align-center"></i></button>
+                            <button type="button" class="toolbar-btn" data-block="justify" title="Justifier"><i class="fas fa-align-justify"></i></button>
+                            <button type="button" class="toolbar-btn" data-block="left" title="Aligner à gauche"><i class="fas fa-align-left"></i></button>
+                            <button type="button" class="toolbar-btn" data-image-local="1" title="Insérer une image locale"><i class="fas fa-image"></i></button>
                         </div>
-                        <textarea id="articleDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
+                        <textarea id="articleContent" name="content" rows="10" placeholder="Rédigez ici votre article complet (paragraphes, listes, etc.)."></textarea>
                     </div>
-                    <div class="form-group">
-                        <label for="articleLink">Lien de l'article *</label>
-                        <input type="url" id="articleLink" name="link" required>
+                    <div class="form-group" id="articleSlugWrap">
+                        <label for="articleSlug">Slug de partage (auto depuis le titre)</label>
+                        <input type="text" id="articleSlug" name="slug" placeholder="auto-genere depuis le titre" readonly>
                     </div>
-                    <div class="form-group">
-                        <label for="articleDate">Date (optionnel)</label>
-                        <input type="date" id="articleDate" name="date">
+                    <div class="form-group" id="articleLinkWrap" style="display:none;">
+                        <label for="articleLink">Lien externe de l'article (optionnel)</label>
+                        <input type="url" id="articleLink" name="link" placeholder="https://...">
+                    </div>
+                    <div class="form-group" id="articleExternalDescriptionWrap" style="display:none;">
+                        <label for="articleExternalDescription">Description de l'article externe (optionnel)</label>
+                        <textarea id="articleExternalDescription" name="externalDescription" rows="4" placeholder="Bref résumé du contenu externe..."></textarea>
                     </div>
                     <div class="admin-actions">
                         <button type="submit" class="btn btn-primary" id="articleSubmitBtn">
@@ -251,6 +420,16 @@
                         </button>
                     </div>
                 </form>
+                <div class="admin-article-preview" id="articleEditorPreview">
+                    <h3>Aperçu en direct</h3>
+                    <p class="admin-article-preview-empty" id="articleEditorPreviewEmpty">Commencez à rédiger pour voir l’aperçu de l’article.</p>
+                    <article class="admin-article-preview-card" id="articleEditorPreviewCard" style="display:none;">
+                        <h4 class="admin-article-preview-title" id="articleEditorPreviewTitle"></h4>
+                        <p class="admin-article-preview-meta" id="articleEditorPreviewMeta"></p>
+                        <div class="admin-article-preview-cover" id="articleEditorPreviewCover"></div>
+                        <div class="description-block admin-article-preview-body" id="articleEditorPreviewBody"></div>
+                    </article>
+                </div>
                 <div class="admin-articles-list" id="adminArticlesList">
                     <h3>Articles ajoutés localement</h3>
                     <div id="localArticlesList"></div>
@@ -280,9 +459,29 @@
                             <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
-                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                            <div class="toolbar-dropdown" data-bullet-dropdown>
+                                <button type="button" class="toolbar-btn" data-bullet-menu-toggle title="Puces et numérotation">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <div class="toolbar-menu" data-bullet-menu>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="- ">- Liste standard</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="• ">• Puce ronde</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="◦ ">◦ Puce vide</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="▪ ">▪ Puce carrée</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="→ ">→ Flèche</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="✓ ">✓ Check</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="1. ">1. Numérotation</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="a) ">a) Alphabétique</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="I. ">I. Romain</button>
+                                </div>
+                            </div>
+                            <button type="button" class="toolbar-btn" data-insert="&#10;---&#10;" title="Séparateur horizontal"><i class="fas fa-grip-lines"></i></button>
                         </div>
                         <textarea id="projectDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectContributions">Mes contributions (aperçu dans la popup, optionnel)</label>
+                        <textarea id="projectContributions" name="contributions" rows="3" placeholder="Ex. UI, UX, stack technique…"></textarea>
                     </div>
                     <div class="form-group">
                         <label for="projectImage">URL de l'image (optionnel)</label>
@@ -299,6 +498,10 @@
                     <div class="form-group">
                         <label for="projectDemo">Lien démo (optionnel)</label>
                         <input type="url" id="projectDemo" name="demo" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectAbout">Lien page « À propos » / présentation (optionnel)</label>
+                        <input type="url" id="projectAbout" name="about" placeholder="https://.../about#...">
                     </div>
                     <div class="form-group">
                         <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
@@ -351,7 +554,23 @@
                             <button type="button" class="toolbar-btn" data-wrap="**" title="Gras"><i class="fas fa-bold"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="*" title="Italique"><i class="fas fa-italic"></i></button>
                             <button type="button" class="toolbar-btn" data-wrap="__" title="Souligné"><i class="fas fa-underline"></i></button>
-                            <button type="button" class="toolbar-btn" data-prefix="- " title="Liste à puces"><i class="fas fa-list-ul"></i></button>
+                            <div class="toolbar-dropdown" data-bullet-dropdown>
+                                <button type="button" class="toolbar-btn" data-bullet-menu-toggle title="Puces et numérotation">
+                                    <i class="fas fa-list-ul"></i>
+                                </button>
+                                <div class="toolbar-menu" data-bullet-menu>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="- ">- Liste standard</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="• ">• Puce ronde</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="◦ ">◦ Puce vide</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="▪ ">▪ Puce carrée</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="→ ">→ Flèche</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="✓ ">✓ Check</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="1. ">1. Numérotation</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="a) ">a) Alphabétique</button>
+                                    <button type="button" class="toolbar-menu-item" data-prefix="I. ">I. Romain</button>
+                                </div>
+                            </div>
+                            <button type="button" class="toolbar-btn" data-insert="&#10;---&#10;" title="Séparateur horizontal"><i class="fas fa-grip-lines"></i></button>
                         </div>
                         <textarea id="experienceDescription" name="description" rows="6" required placeholder="Une ligne vide = paragraphe. **gras** *italique* __souligné__. Ligne commençant par - = puce."></textarea>
                     </div>
@@ -378,6 +597,69 @@
                 <div class="admin-articles-list" id="adminExperiencesList">
                     <h3>Expériences ajoutées localement</h3>
                     <div id="localExperiencesList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panneau d'Administration des Compétences -->
+    <div id="adminSkillsPanel" class="admin-panel" style="display: none;">
+        <div class="admin-content">
+            <div class="admin-header">
+                <h2><i class="fas fa-cog"></i> Administration des Compétences</h2>
+                <button class="admin-close" id="closeAdminSkillsBtn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="admin-body">
+                <form id="addSkillForm">
+                    <div class="form-group">
+                        <label for="skillCategory">Catégorie *</label>
+                        <select id="skillCategory" required>
+                            <option value="frontend">Frontend</option>
+                            <option value="backend">Backend</option>
+                            <option value="blockchain">Blockchain & Cardano</option>
+                            <option value="tools">Outils</option>
+                            <option value="certifications">Certifications</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="skillName">Nom de la compétence *</label>
+                        <input type="text" id="skillName" required placeholder="ex. React">
+                    </div>
+                    <div class="form-group">
+                        <label for="skillIcon">Classe d'icône Font Awesome *</label>
+                        <input type="text" id="skillIcon" required placeholder="ex. fab fa-react">
+                    </div>
+                    <div class="form-group">
+                        <label for="skillLevel">Niveau (0-100) *</label>
+                        <input type="number" id="skillLevel" min="0" max="100" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="skillLink">Lien (optionnel)</label>
+                        <input type="url" id="skillLink" placeholder="https://...">
+                    </div>
+                    <div class="form-group">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="skillCertification">
+                            Marquer comme certification
+                        </label>
+                    </div>
+                    <div class="admin-actions">
+                        <button type="submit" class="btn btn-primary" id="skillSubmitBtn">
+                            <i class="fas fa-plus"></i> Ajouter la compétence
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="exportSkillsBtn">
+                            <i class="fas fa-download"></i> Exporter skills.json
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearLocalSkillsBtn">
+                            <i class="fas fa-trash"></i> Effacer les compétences locales
+                        </button>
+                    </div>
+                </form>
+                <div class="admin-articles-list" id="adminSkillsList">
+                    <h3>Compétences éditables</h3>
+                    <div id="localSkillsList"></div>
                 </div>
             </div>
         </div>
@@ -474,19 +756,98 @@
     <!-- Conteneur des toasts -->
     <div id="toastContainer" class="toast-container" aria-live="polite"></div>
 
-    <!-- Modal mot de passe admin (premium) -->
+    <!-- Popup description projet (Résumé) -->
+    <div class="project-desc-modal-overlay" id="projectDescModalOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="projectDescModalTitle">
+        <div class="project-desc-modal" id="projectDescModal" tabindex="-1">
+            <button type="button" class="project-desc-modal-close" id="projectDescModalClose" aria-label="Fermer">
+                <i class="fas fa-times" aria-hidden="true"></i>
+            </button>
+            <h3 class="project-desc-modal-title" id="projectDescModalTitle"></h3>
+            <div class="project-desc-modal-body" id="projectDescModalBody"></div>
+        </div>
+    </div>
+
+    <!-- Lecture d'article en page complète -->
+    <section id="articlePageSection" class="section article-page" style="display: none;" aria-labelledby="articleReaderTitle">
+        <div class="container article-page-container">
+            <div class="article-page-header">
+                <button type="button" class="btn btn-secondary" id="articleReaderClose">
+                    <i class="fas fa-arrow-left"></i> Retour aux articles
+                </button>
+            </div>
+            <h1 class="project-desc-modal-title" id="articleReaderTitle"></h1>
+            <div class="article-reader-meta">
+                <span id="articleReaderDate"></span>
+                <div class="article-reader-meta-actions">
+                    <button type="button" class="btn btn-secondary article-share-btn" id="articleReaderShareBtn">
+                        <i class="fas fa-link"></i> Copier le lien
+                    </button>
+                </div>
+            </div>
+            <div class="article-share-inline">
+                <label for="articleReaderShareLink">Lien à partager</label>
+                <input type="text" id="articleReaderShareLink" readonly>
+            </div>
+            <div class="article-reader-body description-block" id="articleReaderBody"></div>
+            <div class="article-engagement" id="articleEngagementPanel">
+                <div class="article-engagement-row">
+                    <button type="button" class="btn btn-secondary article-like-btn" id="articleLikeBtn">
+                        <i class="fas fa-heart"></i> J'aime
+                    </button>
+                    <span class="article-like-count" id="articleLikeCount">0</span>
+                    <div class="article-reactions" id="articleReactions">
+                        <button type="button" class="reaction-btn" data-emoji="👍">👍</button>
+                        <button type="button" class="reaction-btn" data-emoji="🔥">🔥</button>
+                        <button type="button" class="reaction-btn" data-emoji="❤️">❤️</button>
+                        <button type="button" class="reaction-btn" data-emoji="👏">👏</button>
+                        <button type="button" class="reaction-btn" data-emoji="🎉">🎉</button>
+                    </div>
+                </div>
+                <form id="articleCommentForm" class="article-comment-form">
+                    <input type="text" id="articleCommentName" placeholder="Votre nom (optionnel)">
+                    <textarea id="articleCommentInput" rows="3" placeholder="Laisser un commentaire..."></textarea>
+                    <div class="article-comment-actions">
+                        <button type="submit" class="btn btn-primary">Publier le commentaire</button>
+                    </div>
+                </form>
+                <div id="articleCommentsList" class="article-comments-list"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Modal connexion admin Supabase -->
     <div class="admin-modal-overlay" id="adminModalOverlay" aria-hidden="true" role="dialog" aria-labelledby="adminModalTitle" aria-modal="true">
         <div class="admin-modal" id="adminModal">
             <div class="admin-modal-icon"><i class="fas fa-lock"></i></div>
             <h2 class="admin-modal-title" id="adminModalTitle">Accès administration</h2>
-            <p class="admin-modal-subtitle">Entrez votre mot de passe pour gérer les articles, projets et expériences.</p>
-            <form id="adminModalForm" autocomplete="off">
-                <input type="password" id="adminModalPassword" placeholder="Mot de passe" autocomplete="off" aria-label="Mot de passe">
+            <p class="admin-modal-subtitle">Connectez-vous avec votre compte Supabase pour gérer le portfolio.</p>
+            <form id="adminModalForm" autocomplete="on">
+                <label class="admin-modal-label" for="adminModalEmail">Email Supabase</label>
+                <input type="email" id="adminModalEmail" placeholder="exemple@domaine.com" autocomplete="username" aria-label="Email Supabase" required>
+                <label class="admin-modal-label" for="adminModalPassword">Mot de passe Supabase</label>
+                <div class="admin-password-wrap">
+                    <input type="password" id="adminModalPassword" placeholder="Mot de passe" autocomplete="current-password" aria-label="Mot de passe Supabase" required>
+                    <button type="button" class="admin-password-toggle" id="adminModalTogglePassword" aria-label="Afficher le mot de passe" title="Afficher le mot de passe">
+                        <i class="fas fa-eye" aria-hidden="true"></i>
+                    </button>
+                </div>
                 <div class="admin-modal-actions">
                     <button type="button" class="btn btn-secondary" id="adminModalCancel">Annuler</button>
-                    <button type="submit" class="btn btn-primary" id="adminModalSubmit"><i class="fas fa-sign-in-alt"></i> Accéder</button>
+                    <button type="submit" class="btn btn-primary" id="adminModalSubmit"><i class="fas fa-sign-in-alt"></i> Connexion</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Connexion Supabase (visible en mode admin) : sauvegarde en ligne des contenus -->
+    <div id="supabaseAdminStrip" class="supabase-admin-strip" style="display: none;">
+        <div class="container supabase-admin-inner">
+            <span class="supabase-admin-label"><i class="fas fa-database"></i> Supabase</span>
+            <input type="email" id="sbPortfolioEmail" class="supabase-admin-input" placeholder="Email compte" autocomplete="username">
+            <input type="password" id="sbPortfolioPassword" class="supabase-admin-input" placeholder="Mot de passe" autocomplete="current-password">
+            <button type="button" class="btn btn-secondary supabase-admin-btn" id="sbPortfolioSignIn">Connexion</button>
+            <button type="button" class="btn btn-secondary supabase-admin-btn" id="sbPortfolioSignOut" style="display: none;">Déconnexion</button>
+            <span id="sbPortfolioStatus" class="supabase-admin-status" aria-live="polite"></span>
         </div>
     </div>
 
@@ -501,7 +862,12 @@
         </div>
     </footer>
 
-    <!-- Script JavaScript -->
+    <!-- Supabase (optionnel) : copier supabase-config.example.js → supabase-config.js puis remplir -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.1/dist/umd/supabase.min.js"></script>
+    <script src="supabase-config.js"></script>
+    <script src="supabase-portfolio.js"></script>
+    <script src="js/article-slugs.js"></script>
+    <script src="js/markdown-portfolio.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

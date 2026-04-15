@@ -1,25 +1,61 @@
 {
   "fr": {
     "nav": {
-      "home": "Accueil",
       "about": "À propos",
       "skills": "Compétences",
       "experiences": "Expériences",
+      "services": "Services",
       "projects": "Projets",
       "articles": "Articles",
       "cv": "CV",
       "contact": "Contact"
     },
     "hero": {
-      "subtitle": "UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Formateur Web3 & Contributeur Communautaire | Rédacteur Technique | Créateur de Contenus Web3 | Reviseur – Project Catalyst Cardano",
-      "bio": "Spécialisé dans l'écosystème Cardano, la formation et la création de contenus Web3.",
+      "hello": "Hello",
+      "titleIntro": "Je suis",
+      "ctaPrimary": "Me contacter",
+      "subtitleRotate": [
+        "UI/UX Developer et Junior Web3 Developer",
+        "Databases Designer & Manager",
+        "Réviseur des projets Web2 & Web3",
+        "Créateur de contenus Web3 & formateur",
+        "Blockchains Ambassador & plaidoyer"
+      ],
       "downloadCv": "Télécharger le CV"
     },
     "about": {
-      "title": "À propos de moi",
-      "text1": "Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano. Mon travail combine les technologies web modernes avec l'innovation blockchain pour créer des expériences numériques intuitives et centrées utilisateur.",
-      "text2": "Au-delà du développement, je contribue activement à la croissance de l'écosystème Cardano et Web3 en RD Congo grâce à la formation, à l'engagement communautaire et à la rédaction technique. J'accompagne l'onboarding des nouveaux membres, crée des contenus éducatifs et aide à faire le lien entre Web2 et Web3.",
-      "text3": "Passionné par la blockchain et l'apprentissage continu, je vise à développer des solutions impactantes tout en renforçant les communautés par la technologie et le partage de connaissances."
+      "title": "Quelque chose sur moi",
+      "envLead": "Diplômé en Environnement et Développement durable, passionné par le climat et les grands enjeux environnementaux.",
+      "text1": "Je suis UI/UX Developer et Junior Web3 Developer, spécialisé dans la blockchain Cardano : je combine technologies web modernes et innovation blockchain pour des expériences numériques intuitives et utiles.",
+      "text2": "Au-delà du développement, je contribue à la croissance de l'écosystème Cardano et Web3 en RD Congo — formation, communauté, rédaction technique — en reliant Web2 et Web3 avec une attention aux impacts et à une innovation responsable.",
+      "text3": "Le climat et le développement durable nourrissent ma façon de voir la tech : j'aspire à des solutions concrètes, des communautés plus fortes, et un apprentissage continu — entre protection de l'environnement et systèmes décentralisés."
+    },
+    "services": {
+      "title": "Services",
+      "intro": "Je réunis design, données, Web3 et la blockchain Cardano pour des résultats concrets : interfaces soignées, contenus clairs, formation pratique et accompagnement fiable de vos projets.",
+      "cta": "Me contacter",
+      "cards": {
+        "ui": {
+          "title": "UI/UX & développement Web3",
+          "desc": "Interfaces utilisateur, parcours clairs et développement orienté produit, avec une forte sensibilité Cardano et écosystèmes Web3."
+        },
+        "data": {
+          "title": "Bases de données",
+          "desc": "Conception, modélisation et gestion de bases de données pour sécuriser et structurer vos données."
+        },
+        "review": {
+          "title": "Revue de projets Web2 & Web3",
+          "desc": "Lecture critique des livrables, jalons et cohérence produit entre Web2 et Web3."
+        },
+        "content": {
+          "title": "Contenus Web3 & formation",
+          "desc": "Création de contenus, vulgarisation et sessions de formation pour faire monter en compétence vos équipes ou votre communauté."
+        },
+        "ambassador": {
+          "title": "Blockchains Ambassador",
+          "desc": "Plaidoyer et représentation autour de plusieurs blockchains, avec un ancrage fort sur Cardano et l’écosystème ouvert."
+        }
+      }
     },
     "skills": {
       "title": "Compétences",
@@ -38,13 +74,25 @@
       "next": "Suivant"
     },
     "projects": {
-      "title": "Mes Projets",
+      "title": "Contributions aux projets",
+      "intro": "Trouvez ici les projets récents sur lesquels j'ai contribué : ils combinent à la fois le Web2 et le Web3 et témoignent de mes capacités à livrer des réalisations concrètes. Vos suggestions, conseils ou appréciations pour améliorer ces projets sont les bienvenues.",
       "loading": "Chargement des projets...",
       "noProjects": "Aucun projet disponible pour le moment.",
+      "visit": "Visiter",
+      "viewPresentation": "Présentation",
+      "githubUnavailable": "Dépôt GitHub non communiqué",
+      "descriptionBtn": "Résumé",
+      "contributionsTitle": "Mes contributions",
+      "descriptionSectionTitle": "Description",
+      "closeDescription": "Fermer",
       "viewCode": "Code",
       "viewDemo": "Démo",
       "loadMore": "Charger plus",
-      "loadLess": "Charger moins"
+      "loadLess": "Charger moins",
+      "ujuziLabs": {
+        "contributions": "UI, UX, outil de pilotage des activités ; Web3, Cardano, validateurs et volets environnementaux intégrés au site.",
+        "description": "Un site web pour la gestion au quotidien des activités d'UJUZI Labs. UJUZI Labs est un centre d'innovation engagé dans l'éducation et l'incubation des talents en Afrique centrale ; ses activités incluent notamment l'éducation Web3, des projets blockchain sur Cardano, des validateurs, des projets liés à l'environnement, et le développement du site a cherché à intégrer tous ces aspects."
+      }
     },
     "articles": {
       "title": "Articles & Publications",
@@ -79,25 +127,61 @@
   },
   "en": {
     "nav": {
-      "home": "Home",
       "about": "About",
       "skills": "Skills",
       "experiences": "Experience",
+      "services": "Services",
       "projects": "Projects",
       "articles": "Articles",
       "cv": "Resume",
       "contact": "Contact"
     },
     "hero": {
-      "subtitle": "UI/UX Developer | Junior Web3 Developer – Cardano Blockchain | Web3 Trainer & Community Contributor | Technical Writer | Web3 Content Creator | Reviewer – Project Catalyst Cardano",
-      "bio": "Specialized in the Cardano ecosystem, training and Web3 content creation.",
+      "hello": "Hello",
+      "titleIntro": "I'm",
+      "ctaPrimary": "Contact me",
+      "subtitleRotate": [
+        "UI/UX Developer and Junior Web3 Developer",
+        "Databases Designer & Manager",
+        "Web2 & Web3 Projects Reviewer",
+        "Web3 Contents Creator & Trainer",
+        "Blockchains Ambassador & Advocate"
+      ],
       "downloadCv": "Download Resume"
     },
     "about": {
-      "title": "About Me",
-      "text1": "I am a UI/UX Developer and Junior Web3 Developer, specialized in the Cardano blockchain. My work combines modern web technologies with blockchain innovation to create intuitive, user-centered digital experiences.",
-      "text2": "Beyond development, I actively contribute to the growth of the Cardano and Web3 ecosystem in DR Congo through training, community engagement and technical writing. I support onboarding of new members, create educational content and help bridge Web2 and Web3.",
-      "text3": "Passionate about blockchain and continuous learning, I aim to develop impactful solutions while strengthening communities through technology and knowledge sharing."
+      "title": "Something About Me",
+      "envLead": "I hold a degree in Environment and Sustainable Development, and I care deeply about the climate and environmental issues.",
+      "text1": "I'm also a UI/UX Developer and Junior Web3 Developer focused on the Cardano blockchain—bringing together modern web practices and blockchain innovation to build intuitive, purposeful digital experiences.",
+      "text2": "Beyond coding, I help grow the Cardano and Web3 ecosystem in DR Congo through training, community work and technical writing—connecting Web2 and Web3 with an eye on impact and responsible innovation.",
+      "text3": "Climate and sustainability shape how I think about technology: I aim for tangible outcomes, stronger communities, and continuous learning—bridging environmental stewardship and decentralized systems."
+    },
+    "services": {
+      "title": "Services",
+      "intro": "I bring together design, data, Web3 and the Cardano blockchain to deliver tangible results: thoughtfully crafted interfaces, clear technical content, hands-on training and reliable project support.",
+      "cta": "Contact me",
+      "cards": {
+        "ui": {
+          "title": "UI/UX & Web3 development",
+          "desc": "User interfaces, clear flows and product-minded development, with strong focus on Cardano and Web3 ecosystems."
+        },
+        "data": {
+          "title": "Databases",
+          "desc": "Design, modeling and database management to keep your product data structured and reliable."
+        },
+        "review": {
+          "title": "Web2 & Web3 project review",
+          "desc": "Critical review of deliverables, milestones and product consistency across Web2 and Web3."
+        },
+        "content": {
+          "title": "Web3 content & training",
+          "desc": "Content creation, education and hands-on training to upskill teams and communities."
+        },
+        "ambassador": {
+          "title": "Blockchains Ambassador",
+          "desc": "Advocacy and representation across multiple blockchains, with a strong anchor on Cardano and open ecosystems."
+        }
+      }
     },
     "skills": {
       "title": "Skills",
@@ -116,13 +200,25 @@
       "next": "Next"
     },
     "projects": {
-      "title": "My Projects",
+      "title": "Project contributions",
+      "intro": "Here are the recent projects I've contributed to—they combine Web2 and Web3 work and reflect my ability to deliver solid outcomes. Your suggestions, advice, or feedback to improve these projects are very welcome.",
       "loading": "Loading projects...",
       "noProjects": "No projects available at the moment.",
+      "visit": "Visit",
+      "viewPresentation": "Presentation",
+      "githubUnavailable": "GitHub repository not shared",
+      "descriptionBtn": "Overview",
+      "contributionsTitle": "My contributions",
+      "descriptionSectionTitle": "Description",
+      "closeDescription": "Close",
       "viewCode": "Code",
       "viewDemo": "Demo",
       "loadMore": "Load more",
-      "loadLess": "Load less"
+      "loadLess": "Load less",
+      "ujuziLabs": {
+        "contributions": "UI, UX, activity management; Web3, Cardano, validators and environmental aspects brought together on the site.",
+        "description": "A website for managing UJUZI Labs' day-to-day activities. UJUZI Labs is an innovation centre focused on education and incubating talent in Central Africa; its activities include Web3 education, Cardano blockchain projects, validators, environmental projects, and developing the site aimed to reflect all of these dimensions."
+      }
     },
     "articles": {
       "title": "Articles & Publications",
@@ -139,7 +235,7 @@
       "download": "Download Resume (PDF)"
     },
     "contact": {
-      "title": "Contact Me",
+      "title": "Let's get in touch",
       "social": "Social Networks",
       "form": "Contact Form",
       "name": "Name",
